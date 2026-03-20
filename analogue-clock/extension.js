@@ -338,20 +338,34 @@ export default class ClockExtension extends Extension {
         cr.stroke();
         cr.restore();
 
-        // ── Elegant Center Jewel ─────────────────────────────────────────
+        // ── Ultra-Shiny Crystal Center ───────────────────────────────────
+        // 1. External Glow/Bloom (Multi-layered)
+        for (let i = 1; i <= 2; i++) {
+            cr.arc(cx, cy, 7 + i * 2, 0, 2 * Math.PI);
+            cr.setSourceRGBA(0.4, 0.8, 1.0, 0.1 / i);
+            cr.fill();
+        }
+
+        // 2. Main Body (Sapphire/Crystal)
         let jewelGrad = new Cairo.RadialGradient(cx - 2, cy - 2, 1, cx, cy, 7);
-        jewelGrad.addColorStopRGBA(0,   1.0, 1.0, 1.0, 1.0);
-        jewelGrad.addColorStopRGBA(0.4, 0.1, 0.6, 1.0, 1.0);
-        jewelGrad.addColorStopRGBA(1,   0.0, 0.2, 0.4, 1.0);
-        
+        jewelGrad.addColorStopRGBA(0.0, 1.0, 1.0, 1.0, 1.0); // Bright core
+        jewelGrad.addColorStopRGBA(0.3, 0.2, 0.7, 1.0, 1.0); // Vivid blue
+        jewelGrad.addColorStopRGBA(0.7, 0.0, 0.3, 0.6, 1.0); // Darker blue
+        jewelGrad.addColorStopRGBA(1.0, 0.0, 0.1, 0.2, 1.0); // Deep edge
+
         cr.arc(cx, cy, 7, 0, 2 * Math.PI);
         cr.setSource(jewelGrad);
         cr.fill();
-        
-        // Edge highlight
+
+        // 3. Specular Sparkle (Top-Left)
+        cr.arc(cx - 2.5, cy - 2.5, 2, 0, 2 * Math.PI);
+        cr.setSourceRGBA(1.0, 1.0, 1.0, 0.8);
+        cr.fill();
+
+        // 4. Sharp Edge Highlight
         cr.arc(cx, cy, 7, 0, 2 * Math.PI);
-        cr.setSourceRGBA(1, 1, 1, 0.4);
-        cr.setLineWidth(1);
+        cr.setSourceRGBA(1.0, 1.0, 1.0, 0.5);
+        cr.setLineWidth(1.2);
         cr.stroke();
     }
 
