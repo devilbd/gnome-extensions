@@ -164,185 +164,238 @@ export default class ClockExtension extends Extension {
 
         const cx = width  / 2;
         const cy = height / 2;
-        const R  = Math.min(width, height) / 2 - 6;
+        const R  = Math.min(width, height) / 2 - 8;
 
         // ── Clear ──────────────────────────────────────────────────────────
         cr.setOperator(Cairo.Operator.CLEAR);
         cr.paint();
         cr.setOperator(Cairo.Operator.OVER);
 
-        // ── Outer glow ring ───────────────────────────────────────────────
-        // soft cyan halo
-        cr.arc(cx, cy, R + 4, 0, 2 * Math.PI);
-        cr.setSourceRGBA(0.0, 0.85, 1.0, 0.18);
-        cr.setLineWidth(10);
+        // ── Outer Neon Bloom (Multi-layered Glow) ─────────────────────────
+        for (let i = 1; i <= 3; i++) {
+            cr.arc(cx, cy, R + 2 + i * 2, 0, 2 * Math.PI);
+            cr.setSourceRGBA(0.0, 0.6, 1.0, 0.15 / i);
+            cr.setLineWidth(6 * i);
+            cr.stroke();
+        }
+
+        // ── Dark Metallic Rim (Beveled Glass Edge) ────────────────────────
+        let rimGrad = new Cairo.LinearGradient(cx - R, cy - R, cx + R, cy + R);
+        rimGrad.addColorStopRGBA(0,   0.15, 0.15, 0.18, 1.0); // Dark top
+        rimGrad.addColorStopRGBA(0.4, 0.45, 0.48, 0.55, 1.0); // Highlight
+        rimGrad.addColorStopRGBA(0.6, 0.05, 0.05, 0.08, 1.0); // Deep shadow
+        rimGrad.addColorStopRGBA(1,   0.25, 0.28, 0.35, 1.0); // Bottom reflection
+        
+        cr.arc(cx, cy, R + 2, 0, 2 * Math.PI);
+        cr.setSource(rimGrad);
+        cr.setLineWidth(5);
         cr.stroke();
 
-        // ── Face background (deep dark radial) ────────────────────────────
-        let faceGrad = new Cairo.RadialGradient(cx - R * 0.25, cy - R * 0.25, R * 0.05,
+        // ── Deep Dark Glass Face ──────────────────────────────────────────
+        // Subtle radial gradient for depth
+        let faceGrad = new Cairo.RadialGradient(cx, cy - R * 0.2, R * 0.1,
                                                  cx, cy, R);
-        faceGrad.addColorStopRGBA(0,   0.18, 0.18, 0.22, 0.97);
-        faceGrad.addColorStopRGBA(0.7, 0.08, 0.08, 0.10, 0.97);
-        faceGrad.addColorStopRGBA(1,   0.03, 0.03, 0.05, 0.97);
+        faceGrad.addColorStopRGBA(0,   0.08, 0.09, 0.12, 0.98); // Slightly lighter center-top
+        faceGrad.addColorStopRGBA(0.8, 0.03, 0.03, 0.05, 0.98); // Deep charcoal
+        faceGrad.addColorStopRGBA(1,   0.01, 0.01, 0.02, 0.98); // Near black edges
+        
         cr.arc(cx, cy, R, 0, 2 * Math.PI);
         cr.setSource(faceGrad);
         cr.fillPreserve();
-
-        // ── Metallic border ───────────────────────────────────────────────
-        let rimGrad = new Cairo.LinearGradient(cx - R, cy - R, cx + R, cy + R);
-        rimGrad.addColorStopRGBA(0,   0.9, 0.9, 1.0, 1.0);
-        rimGrad.addColorStopRGBA(0.3, 0.4, 0.4, 0.5, 1.0);
-        rimGrad.addColorStopRGBA(0.6, 0.8, 0.8, 0.9, 1.0);
-        rimGrad.addColorStopRGBA(1,   0.2, 0.2, 0.3, 1.0);
-        cr.setSource(rimGrad);
-        cr.setLineWidth(3.5);
+        
+        // Inner shadow for depth
+        cr.save();
+        cr.clip();
+        cr.setSourceRGBA(0, 0, 0, 0.4);
+        cr.setLineWidth(12);
+        cr.arc(cx, cy, R + 4, 0, 2 * Math.PI);
         cr.stroke();
+        cr.restore();
 
-        // ── Inner shine arc (top-left glossy highlight) ───────────────────
+        // ── Main Glass Shine (Top-Left Specular) ─────────────────────────
         cr.save();
         cr.arc(cx, cy, R, 0, 2 * Math.PI);
         cr.clip();
-        let shineGrad = new Cairo.LinearGradient(cx - R * 0.6, cy - R, cx + R * 0.3, cy + R * 0.2);
-        shineGrad.addColorStopRGBA(0,   1, 1, 1, 0.13);
-        shineGrad.addColorStopRGBA(0.5, 1, 1, 1, 0.0);
+        
+        let shineGrad = new Cairo.LinearGradient(cx - R * 0.7, cy - R * 0.7, 
+                                                  cx + R * 0.2, cy + R * 0.2);
+        shineGrad.addColorStopRGBA(0,   1, 1, 1, 0.18);
+        shineGrad.addColorStopRGBA(0.4, 1, 1, 1, 0.02);
+        shineGrad.addColorStopRGBA(1,   1, 1, 1, 0.0);
+        
         cr.setSource(shineGrad);
+        cr.arc(cx, cy, R, 0, 2 * Math.PI);
+        cr.fill();
+        
+        // Secondary reflection (Bottom-Right)
+        let reflectGrad = new Cairo.RadialGradient(cx + R * 0.4, cy + R * 0.4, 0,
+                                                    cx + R * 0.4, cy + R * 0.4, R * 0.6);
+        reflectGrad.addColorStopRGBA(0,   0.3, 0.5, 0.8, 0.08);
+        reflectGrad.addColorStopRGBA(1,   0.3, 0.5, 0.8, 0.0);
+        cr.setSource(reflectGrad);
         cr.arc(cx, cy, R, 0, 2 * Math.PI);
         cr.fill();
         cr.restore();
 
-        // ── Hour tick marks ───────────────────────────────────────────────
+        // ── Ticks and Numbers ─────────────────────────────────────────────
         for (let i = 0; i < 12; i++) {
             const angle = (i * Math.PI) / 6 - Math.PI / 2;
             const isMain = (i % 3 === 0);
-            const inner  = isMain ? R - 22 : R - 14;
-            const lw     = isMain ? 3.5 : 2;
+            const inner  = isMain ? R - 24 : R - 16;
+            const lw     = isMain ? 4 : 2;
 
-            const x1 = cx + Math.cos(angle) * inner;
-            const y1 = cy + Math.sin(angle) * inner;
-            const x2 = cx + Math.cos(angle) * (R - 3);
-            const y2 = cy + Math.sin(angle) * (R - 3);
+            const x1 = cx + Math.cos(angle) * (inner + 2);
+            const y1 = cy + Math.sin(angle) * (inner + 2);
+            const x2 = cx + Math.cos(angle) * (R - 4);
+            const y2 = cy + Math.sin(angle) * (R - 4);
 
-            // glowing tick
+            // Tick Glow
             cr.moveTo(x1, y1);
             cr.lineTo(x2, y2);
             cr.setLineCap(Cairo.LineCap.ROUND);
-            cr.setLineWidth(lw + 2);
-            cr.setSourceRGBA(0.0, 0.85, 1.0, 0.25);
+            cr.setLineWidth(lw + 4);
+            cr.setSourceRGBA(0.2, 0.7, 1.0, 0.12);
             cr.stroke();
 
+            // Core Tick
             cr.moveTo(x1, y1);
             cr.lineTo(x2, y2);
             cr.setLineWidth(lw);
-            cr.setSourceRGBA(0.85, 0.95, 1.0, 0.95);
+            cr.setSourceRGBA(0.9, 0.95, 1.0, 0.9);
             cr.stroke();
 
-            // Draw numbers (12, 3, 6, 9) if enabled
             if (this._showNumbers && isMain) {
                 const num = i === 0 ? 12 : i;
-                
                 const layout = PangoCairo.create_layout(cr);
                 layout.set_text(num.toString(), -1);
-                
-                const fontSize = Math.round(R * 0.18);
-                const desc = Pango.FontDescription.from_string(`Sans Bold ${fontSize}`);
+                const fontSize = Math.round(R * 0.16);
+                const desc = Pango.FontDescription.from_string(`Lexend Bold ${fontSize}`);
                 layout.set_font_description(desc);
 
                 const [pWidth, pHeight] = layout.get_pixel_size();
-                const nx = cx + Math.cos(angle) * (inner - 25) - pWidth / 2;
-                const ny = cy + Math.sin(angle) * (inner - 25) - pHeight / 2;
+                const dist = inner - 24;
+                const nx = cx + Math.cos(angle) * dist - pWidth / 2;
+                const ny = cy + Math.sin(angle) * dist - pHeight / 2;
 
-                cr.setSourceRGBA(0.85, 0.95, 1.0, 0.95);
+                // Subtle number glow
+                cr.save();
+                cr.setSourceRGBA(0.2, 0.7, 1.0, 0.15);
+                for (let dx = -1; dx <= 1; dx++) {
+                    for (let dy = -1; dy <= 1; dy++) {
+                        cr.moveTo(nx + dx, ny + dy);
+                        PangoCairo.show_layout(cr, layout);
+                    }
+                }
+                cr.restore();
+
+                cr.setSourceRGBA(0.95, 0.98, 1.0, 1.0);
                 cr.moveTo(nx, ny);
                 PangoCairo.show_layout(cr, layout);
             }
         }
 
-        // ── Minute tick marks ─────────────────────────────────────────────
+        // ── Minute tick marks (Dimmer) ────────────────────────────────────
         for (let i = 0; i < 60; i++) {
             if (i % 5 === 0) continue;
             const angle = (i * Math.PI) / 30 - Math.PI / 2;
-            const x1 = cx + Math.cos(angle) * (R - 8);
-            const y1 = cy + Math.sin(angle) * (R - 8);
-            const x2 = cx + Math.cos(angle) * (R - 3);
-            const y2 = cy + Math.sin(angle) * (R - 3);
+            const x1 = cx + Math.cos(angle) * (R - 10);
+            const y1 = cy + Math.sin(angle) * (R - 10);
+            const x2 = cx + Math.cos(angle) * (R - 5);
+            const y2 = cy + Math.sin(angle) * (R - 5);
             cr.moveTo(x1, y1);
             cr.lineTo(x2, y2);
-            cr.setLineWidth(1);
-            cr.setSourceRGBA(0.6, 0.75, 0.85, 0.55);
+            cr.setLineWidth(1.5);
+            cr.setSourceRGBA(0.5, 0.6, 0.7, 0.4);
             cr.stroke();
         }
 
-        // ── Clock hand angles ─────────────────────────────────────────────
+        // ── Clock hands ───────────────────────────────────────────────────
         const secAngle  = (seconds * Math.PI) / 30 - Math.PI / 2;
         const minAngle  = (minutes * Math.PI) / 30 + (seconds * Math.PI) / 1800 - Math.PI / 2;
         const hourAngle = ((hours % 12) * Math.PI) / 6 + (minutes * Math.PI) / 360 - Math.PI / 2;
 
-        // ── Hour hand ─────────────────────────────────────────────────────
-        this._drawHand(cr, cx, cy, hourAngle, R * 0.52, 7, [0.85, 0.9, 1.0], [0.0, 0.75, 1.0]);
+        // Hour hand
+        this._drawHand(cr, cx, cy, hourAngle, R * 0.55, 8, [0.95, 0.98, 1.0], [0.1, 0.6, 1.0]);
+        // Minute hand
+        this._drawHand(cr, cx, cy, minAngle, R * 0.82, 6, [0.95, 0.98, 1.0], [0.1, 0.6, 1.0]);
 
-        // ── Minute hand ───────────────────────────────────────────────────
-        this._drawHand(cr, cx, cy, minAngle, R * 0.78, 5, [0.9, 0.95, 1.0], [0.0, 0.85, 1.0]);
-
-        // ── Second hand (neon red) ────────────────────────────────────────
-        // tail
-        cr.moveTo(cx + Math.cos(secAngle + Math.PI) * R * 0.18,
-                  cy + Math.sin(secAngle + Math.PI) * R * 0.18);
-        cr.lineTo(cx + Math.cos(secAngle) * R * 0.88,
-                  cy + Math.sin(secAngle) * R * 0.88);
+        // Second hand (Vibrant Neon Red)
+        cr.save();
         cr.setLineCap(Cairo.LineCap.ROUND);
-        // glow pass
-        cr.setLineWidth(4);
-        cr.setSourceRGBA(1.0, 0.1, 0.2, 0.35);
-        cr.stroke();
-        // sharp pass
-        cr.moveTo(cx + Math.cos(secAngle + Math.PI) * R * 0.18,
-                  cy + Math.sin(secAngle + Math.PI) * R * 0.18);
-        cr.lineTo(cx + Math.cos(secAngle) * R * 0.88,
-                  cy + Math.sin(secAngle) * R * 0.88);
-        cr.setLineWidth(1.5);
-        cr.setSourceRGBA(1.0, 0.25, 0.3, 1.0);
+        
+        // Glow
+        cr.moveTo(cx - Math.cos(secAngle) * R * 0.15, cy - Math.sin(secAngle) * R * 0.15);
+        cr.lineTo(cx + Math.cos(secAngle) * R * 0.9, cy + Math.sin(secAngle) * R * 0.9);
+        cr.setLineWidth(5);
+        cr.setSourceRGBA(1.0, 0.05, 0.2, 0.15);
         cr.stroke();
 
-        // ── Center jewel ─────────────────────────────────────────────────
-        // outer glow
-        cr.arc(cx, cy, 8, 0, 2 * Math.PI);
-        cr.setSourceRGBA(0.0, 0.85, 1.0, 0.45);
-        cr.fill();
-        // inner bright dot
-        cr.arc(cx, cy, 5, 0, 2 * Math.PI);
-        cr.setSourceRGBA(0.9, 0.97, 1.0, 1.0);
-        cr.fill();
-        // specular
-        cr.arc(cx - 1.5, cy - 1.5, 2, 0, 2 * Math.PI);
-        cr.setSourceRGBA(1, 1, 1, 0.9);
-        cr.fill();
+        // Core
+        cr.moveTo(cx - Math.cos(secAngle) * R * 0.15, cy - Math.sin(secAngle) * R * 0.15);
+        cr.lineTo(cx + Math.cos(secAngle) * R * 0.9, cy + Math.sin(secAngle) * R * 0.9);
+        cr.setLineWidth(2);
+        cr.setSourceRGBA(1.0, 0.2, 0.3, 1.0);
+        cr.stroke();
+        cr.restore();
 
-        // Removed cr.$dispose() as it might be causing issues with subsequent frames
+        // ── Elegant Center Jewel ─────────────────────────────────────────
+        let jewelGrad = new Cairo.RadialGradient(cx - 2, cy - 2, 1, cx, cy, 7);
+        jewelGrad.addColorStopRGBA(0,   1.0, 1.0, 1.0, 1.0);
+        jewelGrad.addColorStopRGBA(0.4, 0.1, 0.6, 1.0, 1.0);
+        jewelGrad.addColorStopRGBA(1,   0.0, 0.2, 0.4, 1.0);
+        
+        cr.arc(cx, cy, 7, 0, 2 * Math.PI);
+        cr.setSource(jewelGrad);
+        cr.fill();
+        
+        // Edge highlight
+        cr.arc(cx, cy, 7, 0, 2 * Math.PI);
+        cr.setSourceRGBA(1, 1, 1, 0.4);
+        cr.setLineWidth(1);
+        cr.stroke();
     }
 
-    /** Draw a glowing clock hand with a gradient from tipColor to glowColor */
-    _drawHand(cr, cx, cy, angle, length, width, tipRGB, glowRGB) {
+    _drawHand(cr, cx, cy, angle, length, width, coreRGB, glowRGB) {
         const ex = cx + Math.cos(angle) * length;
         const ey = cy + Math.sin(angle) * length;
 
-        // glow pass
+        cr.save();
+        cr.setLineCap(Cairo.LineCap.ROUND);
+
+        // Wide Glow
         cr.moveTo(cx, cy);
         cr.lineTo(ex, ey);
-        cr.setLineCap(Cairo.LineCap.ROUND);
-        cr.setLineWidth(width + 5);
-        cr.setSourceRGBA(glowRGB[0], glowRGB[1], glowRGB[2], 0.22);
+        cr.setLineWidth(width + 8);
+        cr.setSourceRGBA(glowRGB[0], glowRGB[1], glowRGB[2], 0.1);
         cr.stroke();
 
-        // main pass with gradient
-        let grad = new Cairo.LinearGradient(cx, cy, ex, ey);
-        grad.addColorStopRGBA(0,   glowRGB[0]  * 0.6, glowRGB[1]  * 0.6, glowRGB[2]  * 0.6, 1.0);
-        grad.addColorStopRGBA(0.5, tipRGB[0],          tipRGB[1],          tipRGB[2],          1.0);
-        grad.addColorStopRGBA(1,   glowRGB[0],  glowRGB[1],  glowRGB[2],  1.0);
+        // Sharp Glow
+        cr.moveTo(cx, cy);
+        cr.lineTo(ex, ey);
+        cr.setLineWidth(width + 4);
+        cr.setSourceRGBA(glowRGB[0], glowRGB[1], glowRGB[2], 0.25);
+        cr.stroke();
 
+        // Beveled Hand Core
+        let grad = new Cairo.LinearGradient(cx, cy, ex, ey);
+        grad.addColorStopRGBA(0,   coreRGB[0] * 0.7, coreRGB[1] * 0.7, coreRGB[2] * 0.7, 1.0);
+        grad.addColorStopRGBA(0.5, coreRGB[0],       coreRGB[1],       coreRGB[2],       1.0);
+        grad.addColorStopRGBA(1,   coreRGB[0] * 0.9, coreRGB[1] * 0.9, coreRGB[2] * 0.9, 1.0);
+        
         cr.moveTo(cx, cy);
         cr.lineTo(ex, ey);
         cr.setSource(grad);
         cr.setLineWidth(width);
         cr.stroke();
+        
+        // Slim highlight on top
+        cr.moveTo(cx, cy);
+        cr.lineTo(ex, ey);
+        cr.setLineWidth(width * 0.3);
+        cr.setSourceRGBA(1, 1, 1, 0.5);
+        cr.stroke();
+
+        cr.restore();
     }
+
 }
