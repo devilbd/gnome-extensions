@@ -1,0 +1,15 @@
+{
+  "uuid": "clock@devilbd.com",
+  "settings-schema": "org.gnome.shell.extensions.clock@devilbd.com",
+  "name": "Simple Clock",
+  "description": "A simple custom clock widget",
+  "shell-version": [
+    "45",
+    "46",
+    "47",
+    "48",
+    "49"
+  ],
+  "url": "",
+  "version": 1
+}

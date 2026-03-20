@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <requires lib="gtk" version="4.0"/>
+  <requires lib="adwaita" version="1.0"/>
+  <object class="AdwPreferencesPage" id="ClockPrefsWidget">
+    <property name="title">Clock Settings</property>
+    <property name="icon-name">preferences-system-symbolic</property>
+    <child>
+      <object class="AdwPreferencesGroup">
+        <property name="title">Appearance</property>
+        <property name="description">Customize how your desktop clock looks</property>
+        <child>
+          <object class="AdwActionRow">
+            <property name="title">Show Numbers</property>
+            <property name="subtitle">Display 12, 3, 6, and 9 on the face</property>
+            <child>
+              <object class="GtkSwitch" id="show_numbers_switch">
+                <property name="valign">center</property>
+                <property name="active">true</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="AdwActionRow">
+            <property name="title">Clock Size</property>
+            <property name="subtitle">Adjust the diameter of the clock widget</property>
+            <child>
+              <object class="GtkSpinButton" id="size_spin_button">
+                <property name="valign">center</property>
+                <property name="adjustment">
+                  <object class="GtkAdjustment">
+                    <property name="lower">100</property>
+                    <property name="upper">600</property>
+                    <property name="step-increment">10</property>
+                    <property name="value">280</property>
+                  </object>
+                </property>
+              </object>
+            </child>
+          </object>
+        </child>
+      </object>
+    </child>
+    <child>
+      <object class="AdwPreferencesGroup">
+        <property name="title">Behavior</property>
+        <child>
+          <object class="AdwActionRow">
+            <property name="title">Enable Blur Effect</property>
+            <property name="subtitle">Adds a frosted glass effect behind the clock</property>
+            <child>
+              <object class="GtkSwitch" id="blur_switch">
+                <property name="valign">center</property>
+                <property name="active">false</property>
+              </object>
+            </child>
+          </object>
+        </child>
+      </object>
+    </child>
+  </object>
+</interface>

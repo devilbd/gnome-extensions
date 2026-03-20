@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist gettext-domain="clock@devilbd.com">
+  <schema id="org.gnome.shell.extensions.clock@devilbd.com" path="/org/gnome/shell/extensions/clock/">
+    <key name="show-numbers" type="b">
+      <default>true</default>
+      <summary>Show numbers on the clock face</summary>
+    </key>
+    <key name="clock-size" type="i">
+      <default>280</default>
+      <summary>The size of the clock widget</summary>
+    </key>
+    <key name="enable-blur" type="b">
+      <default>false</default>
+      <summary>Enable blur effect behind the clock</summary>
+    </key>
+  </schema>
+</schemalist>
