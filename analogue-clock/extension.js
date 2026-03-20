@@ -1,15 +1,21 @@
 import St from 'gi://St';
 import Clutter from 'gi://Clutter';
 import GLib from 'gi://GLib';
-import cairo from 'cairo';
+import Cairo from 'gi://cairo';
+import Pango from 'gi://Pango';
+import PangoCairo from 'gi://PangoCairo';
 import { Extension } from 'resource:///org/gnome/shell/extensions/extension.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import Shell from 'gi://Shell';
+import Gio from 'gi://Gio';
 
 export default class ClockExtension extends Extension {
     enable() {
         try {
             this._settings = this.getSettings();
-            this._size = this._settings.get_int('clock-size');
+            this._size = this._settings.get_int('clock-size') || 280;
+            this._showNumbers = this._settings.get_boolean('show-numbers');
+            console.log(`[ClockExtension] Enabled: size=${this._size}, showNumbers=${this._showNumbers}`);
 
             // St.DrawingArea for Cairo drawing — reactive so it can receive events
             this._clockWidget = new St.DrawingArea({
@@ -20,14 +26,19 @@ export default class ClockExtension extends Extension {
 
             // Listen for settings changes
             this._settingsId = this._settings.connect('changed', (settings, key) => {
+                console.log(`[ClockExtension] Setting changed: ${key}`);
                 if (key === 'clock-size') {
-                    this._size = settings.get_int('clock-size');
+                    this._size = settings.get_int('clock-size') || 280;
                     this._clockWidget.set_size(this._size, this._size);
-                    // Update position to stay relative or just repaint
+                } else if (key === 'show-numbers') {
+                    this._showNumbers = settings.get_boolean('show-numbers');
+                } else if (key === 'enable-blur') {
+                    this._updateBlur();
                 }
                 this._clockWidget.queue_repaint();
             });
 
+            this._updateBlur();
             this._clockWidget.connect('repaint', this._drawClock.bind(this));
 
             // Position: bottom-right corner with margin
@@ -80,10 +91,12 @@ export default class ClockExtension extends Extension {
             this._clockWidget.queue_repaint();
         } catch (e) {
             let msg = e.message + '\n' + e.stack;
-            GLib.file_set_contents(
-                '/run/media/devilbd/d/Development/gnome-extensions-dev/clock/error.log',
-                new TextEncoder().encode(msg)
-            );
+            try {
+                let logFile = this.dir.get_child('error.log');
+                GLib.file_set_contents(logFile.get_path(), new TextEncoder().encode(msg));
+            } catch (err) {
+                console.error('Failed to write to error.log: ' + err.message);
+            }
             console.error('ClockExtension error: ' + msg);
         }
     }
@@ -114,6 +127,32 @@ export default class ClockExtension extends Extension {
         }
     }
 
+    _updateBlur() {
+        if (!this._clockWidget) return;
+
+        let enabled = this._settings.get_boolean('enable-blur');
+        if (enabled) {
+            if (!this._blurEffect) {
+                // Shell.BlurEffect is usually available in extensions
+                try {
+                    this._blurEffect = new Shell.BlurEffect({
+                        brightness: 0.6,
+                        sigma: 30,
+                        mode: Shell.BlurMode.BACKGROUND
+                    });
+                    this._clockWidget.add_effect(this._blurEffect);
+                } catch (e) {
+                    console.error('Failed to add blur effect: ' + e.message);
+                }
+            }
+        } else {
+            if (this._blurEffect) {
+                this._clockWidget.remove_effect(this._blurEffect);
+                this._blurEffect = null;
+            }
+        }
+    }
+
     _drawClock(area) {
         const cr = area.get_context();
         const [width, height] = area.get_surface_size();
@@ -128,9 +167,9 @@ export default class ClockExtension extends Extension {
         const R  = Math.min(width, height) / 2 - 6;
 
         // ── Clear ──────────────────────────────────────────────────────────
-        cr.setOperator(cairo.Operator.CLEAR);
+        cr.setOperator(Cairo.Operator.CLEAR);
         cr.paint();
-        cr.setOperator(cairo.Operator.OVER);
+        cr.setOperator(Cairo.Operator.OVER);
 
         // ── Outer glow ring ───────────────────────────────────────────────
         // soft cyan halo
@@ -140,7 +179,7 @@ export default class ClockExtension extends Extension {
         cr.stroke();
 
         // ── Face background (deep dark radial) ────────────────────────────
-        let faceGrad = new cairo.RadialGradient(cx - R * 0.25, cy - R * 0.25, R * 0.05,
+        let faceGrad = new Cairo.RadialGradient(cx - R * 0.25, cy - R * 0.25, R * 0.05,
                                                  cx, cy, R);
         faceGrad.addColorStopRGBA(0,   0.18, 0.18, 0.22, 0.97);
         faceGrad.addColorStopRGBA(0.7, 0.08, 0.08, 0.10, 0.97);
@@ -150,7 +189,7 @@ export default class ClockExtension extends Extension {
         cr.fillPreserve();
 
         // ── Metallic border ───────────────────────────────────────────────
-        let rimGrad = new cairo.LinearGradient(cx - R, cy - R, cx + R, cy + R);
+        let rimGrad = new Cairo.LinearGradient(cx - R, cy - R, cx + R, cy + R);
         rimGrad.addColorStopRGBA(0,   0.9, 0.9, 1.0, 1.0);
         rimGrad.addColorStopRGBA(0.3, 0.4, 0.4, 0.5, 1.0);
         rimGrad.addColorStopRGBA(0.6, 0.8, 0.8, 0.9, 1.0);
@@ -163,7 +202,7 @@ export default class ClockExtension extends Extension {
         cr.save();
         cr.arc(cx, cy, R, 0, 2 * Math.PI);
         cr.clip();
-        let shineGrad = new cairo.LinearGradient(cx - R * 0.6, cy - R, cx + R * 0.3, cy + R * 0.2);
+        let shineGrad = new Cairo.LinearGradient(cx - R * 0.6, cy - R, cx + R * 0.3, cy + R * 0.2);
         shineGrad.addColorStopRGBA(0,   1, 1, 1, 0.13);
         shineGrad.addColorStopRGBA(0.5, 1, 1, 1, 0.0);
         cr.setSource(shineGrad);
@@ -186,7 +225,7 @@ export default class ClockExtension extends Extension {
             // glowing tick
             cr.moveTo(x1, y1);
             cr.lineTo(x2, y2);
-            cr.setLineCap(cairo.LineCap.ROUND);
+            cr.setLineCap(Cairo.LineCap.ROUND);
             cr.setLineWidth(lw + 2);
             cr.setSourceRGBA(0.0, 0.85, 1.0, 0.25);
             cr.stroke();
@@ -198,15 +237,23 @@ export default class ClockExtension extends Extension {
             cr.stroke();
 
             // Draw numbers (12, 3, 6, 9) if enabled
-            if (this._settings.get_boolean('show-numbers') && isMain) {
+            if (this._showNumbers && isMain) {
                 const num = i === 0 ? 12 : i;
-                cr.selectFontFace("Sans", cairo.FontSlant.NORMAL, cairo.FontWeight.BOLD);
-                cr.setFontSize(R * 0.18);
-                const extents = cr.textExtents(num.toString());
-                const nx = cx + Math.cos(angle) * (inner - 25) - (extents.width / 2 + extents.x_bearing);
-                const ny = cy + Math.sin(angle) * (inner - 25) - (extents.height / 2 + extents.y_bearing);
+                
+                const layout = PangoCairo.create_layout(cr);
+                layout.set_text(num.toString(), -1);
+                
+                const fontSize = Math.round(R * 0.18);
+                const desc = Pango.FontDescription.from_string(`Sans Bold ${fontSize}`);
+                layout.set_font_description(desc);
+
+                const [pWidth, pHeight] = layout.get_pixel_size();
+                const nx = cx + Math.cos(angle) * (inner - 25) - pWidth / 2;
+                const ny = cy + Math.sin(angle) * (inner - 25) - pHeight / 2;
+
+                cr.setSourceRGBA(0.85, 0.95, 1.0, 0.95);
                 cr.moveTo(nx, ny);
-                cr.showText(num.toString());
+                PangoCairo.show_layout(cr, layout);
             }
         }
 
@@ -242,7 +289,7 @@ export default class ClockExtension extends Extension {
                   cy + Math.sin(secAngle + Math.PI) * R * 0.18);
         cr.lineTo(cx + Math.cos(secAngle) * R * 0.88,
                   cy + Math.sin(secAngle) * R * 0.88);
-        cr.setLineCap(cairo.LineCap.ROUND);
+        cr.setLineCap(Cairo.LineCap.ROUND);
         // glow pass
         cr.setLineWidth(4);
         cr.setSourceRGBA(1.0, 0.1, 0.2, 0.35);
@@ -270,7 +317,7 @@ export default class ClockExtension extends Extension {
         cr.setSourceRGBA(1, 1, 1, 0.9);
         cr.fill();
 
-        cr.$dispose();
+        // Removed cr.$dispose() as it might be causing issues with subsequent frames
     }
 
     /** Draw a glowing clock hand with a gradient from tipColor to glowColor */
@@ -281,13 +328,13 @@ export default class ClockExtension extends Extension {
         // glow pass
         cr.moveTo(cx, cy);
         cr.lineTo(ex, ey);
-        cr.setLineCap(cairo.LineCap.ROUND);
+        cr.setLineCap(Cairo.LineCap.ROUND);
         cr.setLineWidth(width + 5);
         cr.setSourceRGBA(glowRGB[0], glowRGB[1], glowRGB[2], 0.22);
         cr.stroke();
 
         // main pass with gradient
-        let grad = new cairo.LinearGradient(cx, cy, ex, ey);
+        let grad = new Cairo.LinearGradient(cx, cy, ex, ey);
         grad.addColorStopRGBA(0,   glowRGB[0]  * 0.6, glowRGB[1]  * 0.6, glowRGB[2]  * 0.6, 1.0);
         grad.addColorStopRGBA(0.5, tipRGB[0],          tipRGB[1],          tipRGB[2],          1.0);
         grad.addColorStopRGBA(1,   glowRGB[0],  glowRGB[1],  glowRGB[2],  1.0);
