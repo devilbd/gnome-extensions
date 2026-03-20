@@ -174,7 +174,7 @@ export default class ClockExtension extends Extension {
         // ── Outer Neon Bloom (Multi-layered Glow) ─────────────────────────
         for (let i = 1; i <= 3; i++) {
             cr.arc(cx, cy, R + 2 + i * 2, 0, 2 * Math.PI);
-            cr.setSourceRGBA(0.0, 0.6, 1.0, 0.15 / i);
+            cr.setSourceRGBA(0.0, 0.6, 1.0, 0.4 / i);
             cr.setLineWidth(6 * i);
             cr.stroke();
         }
@@ -195,9 +195,9 @@ export default class ClockExtension extends Extension {
         // Subtle radial gradient for depth
         let faceGrad = new Cairo.RadialGradient(cx, cy - R * 0.2, R * 0.1,
                                                  cx, cy, R);
-        faceGrad.addColorStopRGBA(0,   0.08, 0.09, 0.12, 0.98); // Slightly lighter center-top
-        faceGrad.addColorStopRGBA(0.8, 0.03, 0.03, 0.05, 0.98); // Deep charcoal
-        faceGrad.addColorStopRGBA(1,   0.01, 0.01, 0.02, 0.98); // Near black edges
+        faceGrad.addColorStopRGBA(0,   0.08, 0.09, 0.12, 1.0); // Slightly lighter center-top
+        faceGrad.addColorStopRGBA(0.8, 0.03, 0.03, 0.05, 1.0); // Deep charcoal
+        faceGrad.addColorStopRGBA(1,   0.01, 0.01, 0.02, 1.0); // Near black edges
         
         cr.arc(cx, cy, R, 0, 2 * Math.PI);
         cr.setSource(faceGrad);
@@ -219,8 +219,8 @@ export default class ClockExtension extends Extension {
         
         let shineGrad = new Cairo.LinearGradient(cx - R * 0.7, cy - R * 0.7, 
                                                   cx + R * 0.2, cy + R * 0.2);
-        shineGrad.addColorStopRGBA(0,   1, 1, 1, 0.18);
-        shineGrad.addColorStopRGBA(0.4, 1, 1, 1, 0.02);
+        shineGrad.addColorStopRGBA(0,   1, 1, 1, 0.35);
+        shineGrad.addColorStopRGBA(0.4, 1, 1, 1, 0.1);
         shineGrad.addColorStopRGBA(1,   1, 1, 1, 0.0);
         
         cr.setSource(shineGrad);
@@ -230,7 +230,7 @@ export default class ClockExtension extends Extension {
         // Secondary reflection (Bottom-Right)
         let reflectGrad = new Cairo.RadialGradient(cx + R * 0.4, cy + R * 0.4, 0,
                                                     cx + R * 0.4, cy + R * 0.4, R * 0.6);
-        reflectGrad.addColorStopRGBA(0,   0.3, 0.5, 0.8, 0.08);
+        reflectGrad.addColorStopRGBA(0,   0.3, 0.5, 0.8, 0.2);
         reflectGrad.addColorStopRGBA(1,   0.3, 0.5, 0.8, 0.0);
         cr.setSource(reflectGrad);
         cr.arc(cx, cy, R, 0, 2 * Math.PI);
@@ -305,7 +305,7 @@ export default class ClockExtension extends Extension {
             cr.moveTo(x1, y1);
             cr.lineTo(x2, y2);
             cr.setLineWidth(1.5);
-            cr.setSourceRGBA(0.5, 0.6, 0.7, 0.4);
+            cr.setSourceRGBA(0.5, 0.6, 0.7, 0.7);
             cr.stroke();
         }
 
