@@ -164,7 +164,7 @@ export default class ClockExtension extends Extension {
 
         const cx = width  / 2;
         const cy = height / 2;
-        const R  = Math.min(width, height) / 2 - 8;
+        const R  = Math.min(width, height) / 2 - 25;
 
         // ── Clear ──────────────────────────────────────────────────────────
         cr.setOperator(Cairo.Operator.CLEAR);
