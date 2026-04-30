@@ -196,9 +196,10 @@ export default class ClockExtension extends Extension {
         // Subtle radial gradient for depth
         let faceGrad = new Cairo.RadialGradient(cx, cy - R * 0.2, R * 0.1,
                                                  cx, cy, R);
-        faceGrad.addColorStopRGBA(0,   0.08, 0.09, 0.12, 1.0); // Slightly lighter center-top
-        faceGrad.addColorStopRGBA(0.8, 0.03, 0.03, 0.05, 1.0); // Deep charcoal
-        faceGrad.addColorStopRGBA(1,   0.01, 0.01, 0.02, 1.0); // Near black edges
+        // Changed alpha values from 1.0 to semi-transparent to allow the blur to show through
+        faceGrad.addColorStopRGBA(0,   0.08, 0.09, 0.12, 0.25); // Lighter center-top
+        faceGrad.addColorStopRGBA(0.8, 0.03, 0.03, 0.05, 0.4);  // Deep charcoal
+        faceGrad.addColorStopRGBA(1,   0.01, 0.01, 0.02, 0.5);  // Near black edges
         
         cr.arc(cx, cy, R, 0, 2 * Math.PI);
         cr.setSource(faceGrad);
