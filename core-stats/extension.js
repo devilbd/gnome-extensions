@@ -72,7 +72,8 @@ export default class CoreStatsExtension extends Extension {
             this._settingsId = null;
         }
         if (this._container) {
-            global.window_group.remove_child(this._container);
+            let parent = this._container.get_parent();
+            if (parent) parent.remove_child(this._container);
             this._container.destroy();
             this._container = null;
         }
@@ -197,8 +198,8 @@ export default class CoreStatsExtension extends Extension {
             });
         });
 
-        // Add to layout manager - place it in the window group at the bottom (behind windows)
-        global.window_group.insert_child_at_index(this._container, 0);
+        // Add to the background group to stay on the desktop level
+        Main.layoutManager._backgroundGroup.add_child(this._container);
 
         // Position it from settings
         this._container.set_position(
