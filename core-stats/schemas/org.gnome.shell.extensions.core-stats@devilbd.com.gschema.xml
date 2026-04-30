@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist gettext-domain="core-stats@devilbd.com">
+  <schema id="org.gnome.shell.extensions.core-stats@devilbd.com" path="/org/gnome/shell/extensions/core-stats/">
+    <key name="refresh-interval" type="i">
+      <default>2</default>
+      <summary>Refresh interval in seconds</summary>
+    </key>
+    <key name="show-cpu-temp" type="b">
+      <default>true</default>
+      <summary>Show CPU temperature in the panel</summary>
+    </key>
+    <key name="show-gpu-temp" type="b">
+      <default>true</default>
+      <summary>Show GPU temperature in the panel</summary>
+    </key>
+    <key name="show-nvme-temp" type="b">
+      <default>true</default>
+      <summary>Show NVMe temperature in the panel</summary>
+    </key>
+    <key name="show-cpu-usage" type="b">
+      <default>true</default>
+      <summary>Show CPU usage percentage in the panel</summary>
+    </key>
+    <key name="show-ram-usage" type="b">
+      <default>true</default>
+      <summary>Show RAM usage percentage in the panel</summary>
+    </key>
+    <key name="show-gpu-usage" type="b">
+      <default>true</default>
+      <summary>Show GPU usage percentage in the panel</summary>
+    </key>
+    <key name="temp-unit" type="s">
+      <default>'celsius'</default>
+      <summary>Temperature unit (celsius or fahrenheit)</summary>
+    </key>
+    <key name="panel-display-mode" type="i">
+      <default>0</default>
+      <summary>Panel display mode (0: full, 1: compact, 2: icons-only)</summary>
+    </key>
+    <key name="warning-threshold" type="i">
+      <default>80</default>
+      <summary>Temperature warning threshold in Celsius</summary>
+    </key>
+    <key name="critical-threshold" type="i">
+      <default>95</default>
+      <summary>Temperature critical threshold in Celsius</summary>
+    </key>
+  </schema>
+</schemalist>

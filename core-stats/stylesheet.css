@@ -1,0 +1,13 @@
+.core-stats-item {
+    spacing: 4px;
+    padding: 0 4px;
+}
+
+.core-stats-item StIcon {
+    icon-size: 16px;
+}
+
+.core-stats-item StLabel {
+    font-size: 0.9em;
+    font-family: "JetBrains Mono", "Roboto Mono", monospace;
+}
