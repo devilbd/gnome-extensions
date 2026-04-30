@@ -79,8 +79,8 @@ export default class ClockExtension extends Extension {
                 return Clutter.EVENT_PROPAGATE;
             });
 
-            // Add to uiGroup overlay so it floats above desktop but below windows
-            Main.uiGroup.add_child(this._clockWidget);
+            // Add to the window group at index 0 to stay behind all windows but above background
+            global.window_group.insert_child_at_index(this._clockWidget, 0);
 
             // Update every second
             this._timeout = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 1, () => {
@@ -122,7 +122,7 @@ export default class ClockExtension extends Extension {
             if (this._repaintId) this._clockWidget.disconnect(this._repaintId);
             if (this._pressId)   this._clockWidget.disconnect(this._pressId);
             if (this._releaseId) this._clockWidget.disconnect(this._releaseId);
-            Main.uiGroup.remove_child(this._clockWidget);
+            global.window_group.remove_child(this._clockWidget);
             this._clockWidget.destroy();
             this._clockWidget = null;
         }
@@ -138,7 +138,7 @@ export default class ClockExtension extends Extension {
                 try {
                     this._blurEffect = new Shell.BlurEffect({
                         brightness: 0.6,
-                        sigma: 30,
+                        radius: 60,
                         mode: Shell.BlurMode.BACKGROUND
                     });
                     this._clockWidget.add_effect(this._blurEffect);
