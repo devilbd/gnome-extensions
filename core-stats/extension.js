@@ -55,6 +55,8 @@ export default class CoreStatsExtension extends Extension {
                     this._settings.get_int('widget-x'),
                     this._settings.get_int('widget-y')
                 );
+            } else if (key === 'widget-width') {
+                this._container.set_width(this._settings.get_int('widget-width'));
             }
             this._updateDisplay();
         });
@@ -148,6 +150,7 @@ export default class CoreStatsExtension extends Extension {
         let header = new St.Label({
             text: _('CORE STATS'),
             style_class: 'core-stats-header',
+            x_expand: true,
             x_align: Clutter.ActorAlign.CENTER
         });
         this._container.add_child(header);
@@ -208,6 +211,7 @@ export default class CoreStatsExtension extends Extension {
             this._settings.get_int('widget-x'),
             this._settings.get_int('widget-y')
         );
+        this._container.set_width(this._settings.get_int('widget-width'));
     }
 
 

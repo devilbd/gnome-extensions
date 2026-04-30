@@ -61,5 +61,9 @@
       <default>100</default>
       <summary>Widget Y coordinate</summary>
     </key>
+    <key name="widget-width" type="i">
+      <default>250</default>
+      <summary>Widget width</summary>
+    </key>
   </schema>
 </schemalist>

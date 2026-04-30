@@ -104,6 +104,15 @@ export default class CoreStatsPreferences extends ExtensionPreferences {
         yRow.add_suffix(ySpin);
         positionGroup.add(yRow);
 
+        const widthRow = new Adw.ActionRow({ title: 'Widget Width' });
+        const widthSpin = new Gtk.SpinButton({
+            adjustment: new Gtk.Adjustment({ lower: 100, upper: 1000, step_increment: 10 }),
+            valign: Gtk.Align.CENTER
+        });
+        settings.bind('widget-width', widthSpin, 'value', Gio.SettingsBindFlags.DEFAULT);
+        widthRow.add_suffix(widthSpin);
+        positionGroup.add(widthRow);
+
         window.add(page);
     }
 }
