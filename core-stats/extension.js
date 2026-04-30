@@ -55,7 +55,7 @@ export default class CoreStatsExtension extends Extension {
         this._updateId = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 
             this._settings.get_int('refresh-interval'), 
             () => {
-                this._updateStats().catch(e => console.error(e));
+                this._updateStats().catch(e => logError(e, 'CoreStats'));
                 return GLib.SOURCE_CONTINUE;
             });
             
@@ -65,7 +65,7 @@ export default class CoreStatsExtension extends Extension {
                 this._updateId = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 
                     this._settings.get_int('refresh-interval'), 
                     () => {
-                        this._updateStats().catch(e => console.error(e));
+                        this._updateStats().catch(e => logError(e, 'CoreStats'));
                         return GLib.SOURCE_CONTINUE;
                     });
             } else if (key === 'widget-x' || key === 'widget-y') {
@@ -210,7 +210,7 @@ export default class CoreStatsExtension extends Extension {
                 }
             }
         } catch (e) {
-            console.error(`CoreStats: Error initializing drives: ${e}`);
+            logError(e, 'CoreStats: Error initializing drives');
         }
     }
 
@@ -312,7 +312,7 @@ export default class CoreStatsExtension extends Extension {
                 await this._readUsage(item);
             }));
         } catch (e) {
-            console.error(`CoreStats: Error updating stats: ${e}`);
+            logError(e, 'CoreStats: Error updating stats');
         }
 
         this._updateDisplay();
@@ -454,7 +454,7 @@ export default class CoreStatsExtension extends Extension {
                         item.freeStr = GLib.format_size(Number(free));
                     }
                 } catch (e) {
-                    console.error(`CoreStats: Error reading usage for ${item.mountPoint}: ${e}`);
+                    logError(e, `CoreStats: Error reading usage for ${item.mountPoint}`);
                 }
             }
         } catch (e) {}
@@ -557,7 +557,7 @@ export default class CoreStatsExtension extends Extension {
                 });
             });
         } catch (e) {
-            console.error(`CoreStats: Failed to read file ${path}: ${e}`);
+            logError(e, `CoreStats: Failed to read file ${path}`);
             return "";
         }
     }
