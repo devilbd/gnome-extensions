@@ -149,9 +149,16 @@ export default class CoreStatsExtension extends Extension {
                     };
 
                     if (type === 'gpu') {
-                        let gpuBase = `/sys/class/drm/card0/device`;
-                        if (GLib.file_test(`${gpuBase}/gpu_busy_percent`, GLib.FileTest.EXISTS)) {
-                            item.usagePath = `${gpuBase}/gpu_busy_percent`;
+                        if (GLib.file_test(`${path}/device/gpu_busy_percent`, GLib.FileTest.EXISTS)) {
+                            item.usagePath = `${path}/device/gpu_busy_percent`;
+                        } else {
+                            for (let cardIdx = 0; cardIdx < 5; cardIdx++) {
+                                let gpuBase = `/sys/class/drm/card${cardIdx}/device`;
+                                if (GLib.file_test(`${gpuBase}/gpu_busy_percent`, GLib.FileTest.EXISTS)) {
+                                    item.usagePath = `${gpuBase}/gpu_busy_percent`;
+                                    break;
+                                }
+                            }
                         }
                     }
 
