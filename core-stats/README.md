@@ -1,6 +1,6 @@
 # Core stats
 
-<img width="342" height="604" alt="Screenshot From 2026-04-30 15-17-51" src="https://github.com/user-attachments/assets/609c55e5-b40d-4051-8de1-a732f1807d8d" />
+<img width="335" height="1069" alt="Screenshot From 2026-04-30 18-05-53" src="https://github.com/user-attachments/assets/a3258938-7abe-4828-89d3-8a1d66b2bdc0" />
 
 # How to use
 
