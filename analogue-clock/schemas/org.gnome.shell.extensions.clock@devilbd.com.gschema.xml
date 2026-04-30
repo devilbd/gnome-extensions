@@ -13,5 +13,9 @@
       <default>false</default>
       <summary>Enable blur effect behind the clock</summary>
     </key>
+    <key name="widget-position" type="i">
+      <default>0</default>
+      <summary>The corner where the clock widget is positioned (0: top-left, 1: top-right, 2: bottom-left, 3: bottom-right)</summary>
+    </key>
   </schema>
 </schemalist>

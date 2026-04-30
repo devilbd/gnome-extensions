@@ -34,5 +34,10 @@ export default class ClockPreferences extends ExtensionPreferences {
         if (blurSwitch) {
             settings.bind('enable-blur', blurSwitch, 'active', 0);
         }
+
+        const positionCombo = builder.get_object('position_combo');
+        if (positionCombo) {
+            settings.bind('widget-position', positionCombo, 'selected', 0);
+        }
     }
 }

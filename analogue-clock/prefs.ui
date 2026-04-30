@@ -57,6 +57,22 @@
             </child>
           </object>
         </child>
+        <child>
+          <object class="AdwComboRow" id="position_combo">
+            <property name="title">Widget Position</property>
+            <property name="subtitle">Choose which corner the clock snaps to</property>
+            <property name="model">
+              <object class="GtkStringList">
+                <items>
+                  <item translatable="yes">Top Left</item>
+                  <item translatable="yes">Top Right</item>
+                  <item translatable="yes">Bottom Left</item>
+                  <item translatable="yes">Bottom Right</item>
+                </items>
+              </object>
+            </property>
+          </object>
+        </child>
       </object>
     </child>
   </object>

@@ -30,10 +30,13 @@ export default class ClockExtension extends Extension {
                 if (key === 'clock-size') {
                     this._size = settings.get_int('clock-size') || 280;
                     this._clockWidget.set_size(this._size, this._size);
+                    this._updatePosition();
                 } else if (key === 'show-numbers') {
                     this._showNumbers = settings.get_boolean('show-numbers');
                 } else if (key === 'enable-blur') {
                     this._updateBlur();
+                } else if (key === 'widget-position') {
+                    this._updatePosition();
                 }
                 this._clockWidget.queue_repaint();
             });
@@ -41,11 +44,8 @@ export default class ClockExtension extends Extension {
             this._updateBlur();
             this._repaintId = this._clockWidget.connect('repaint', this._drawClock.bind(this));
 
-            // Position: bottom-right corner with margin
-            let monitor = Main.layoutManager.primaryMonitor;
-            this._posX = monitor.width - this._size - 40;
-            this._posY = monitor.height - this._size - 80;
-            this._clockWidget.set_position(this._posX, this._posY);
+            // Initial position
+            this._updatePosition();
 
             // ----- Drag support -----
             this._dragging    = false;
@@ -153,6 +153,38 @@ export default class ClockExtension extends Extension {
                 this._blurEffect = null;
             }
         }
+    }
+
+    _updatePosition() {
+        if (!this._clockWidget) return;
+
+        const position = this._settings.get_int('widget-position');
+        const monitor = Main.layoutManager.primaryMonitor;
+        const margin = 40;
+        const bottomMargin = 80; // Extra margin for the panel if it's at the bottom
+
+        // 0: top-left, 1: top-right, 2: bottom-left, 3: bottom-right
+        switch (position) {
+            case 0: // Top Left
+                this._posX = margin;
+                this._posY = margin;
+                break;
+            case 1: // Top Right
+                this._posX = monitor.width - this._size - margin;
+                this._posY = margin;
+                break;
+            case 2: // Bottom Left
+                this._posX = margin;
+                this._posY = monitor.height - this._size - bottomMargin;
+                break;
+            case 3: // Bottom Right
+            default:
+                this._posX = monitor.width - this._size - margin;
+                this._posY = monitor.height - this._size - bottomMargin;
+                break;
+        }
+
+        this._clockWidget.set_position(this._posX, this._posY);
     }
 
     _drawClock(area) {
