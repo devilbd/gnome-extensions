@@ -281,6 +281,15 @@ export default class CoreStatsExtension extends Extension {
             scrollLayout.add_child(prevButton);
         }
 
+        // Subcontainer for scroller and title
+        let scrollerSubcontainer = new St.BoxLayout({
+            vertical: true,
+            x_expand: true,
+            y_expand: true,
+            reactive: true
+        });
+        scrollLayout.add_child(scrollerSubcontainer);
+
         let scrollView = new St.ScrollView({
             hscrollbar_policy: St.PolicyType.NEVER,
             vscrollbar_policy: St.PolicyType.NEVER,
@@ -290,7 +299,7 @@ export default class CoreStatsExtension extends Extension {
             reactive: true,
             enable_mouse_scrolling: true
         });
-        scrollLayout.add_child(scrollView);
+        scrollerSubcontainer.add_child(scrollView);
 
         // Next Button
         let nextButton = null;
@@ -421,6 +430,21 @@ export default class CoreStatsExtension extends Extension {
                 barFill: barFill
             });
         });
+        
+        // Footer with title
+        let footer = new St.BoxLayout({
+            style_class: 'core-stats-footer',
+            x_align: Clutter.ActorAlign.END,
+        });
+        let footerLabel = new St.Label({
+            text: 'CORE STATS',
+            style_class: 'core-stats-footer-label',
+            x_expand: true
+        });
+        footerLabel.clutter_text.ellipsize = Pango.EllipsizeMode.NONE;
+        footerLabel.clutter_text.x_align = Clutter.ActorAlign.END;
+        footer.add_child(footerLabel);
+        scrollerSubcontainer.add_child(footer);
 
         // Add to the UI group and ensure it's visible.
         // We want it to be on the "desktop" level, meaning behind windows.

@@ -192,3 +192,15 @@
     color: #ffffff;
     filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.4));
 }
+
+.core-stats-footer {
+    padding: 0 20px 12px 0;
+}
+
+.core-stats-footer-label {
+    font-size: 10px;
+    font-style: italic;
+    color: rgba(255, 255, 255, 0.4);
+    font-weight: 800;
+    letter-spacing: 1.2px;
+}
