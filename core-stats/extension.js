@@ -2,6 +2,7 @@ import St from 'gi://St';
 import Clutter from 'gi://Clutter';
 import GLib from 'gi://GLib';
 import Gio from 'gi://Gio';
+import Pango from 'gi://Pango';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
@@ -150,8 +151,10 @@ export default class CoreStatsExtension extends Extension {
         let header = new St.Label({
             text: _('CORE STATS'),
             style_class: 'core-stats-header',
+            x_expand: true,
             x_align: Clutter.ActorAlign.CENTER
         });
+        header.clutter_text.ellipsize = Pango.EllipsizeMode.NONE;
         this._container.add_child(header);
 
         this._uiItems = [];
