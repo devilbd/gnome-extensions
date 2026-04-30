@@ -29,6 +29,14 @@
       <default>true</default>
       <summary>Show GPU usage percentage in the panel</summary>
     </key>
+    <key name="show-nvme-usage" type="b">
+      <default>true</default>
+      <summary>Show NVMe usage percentage in the panel</summary>
+    </key>
+    <key name="show-ram-temp" type="b">
+      <default>true</default>
+      <summary>Show RAM temperature in the panel</summary>
+    </key>
     <key name="temp-unit" type="s">
       <default>'celsius'</default>
       <summary>Temperature unit (celsius or fahrenheit)</summary>

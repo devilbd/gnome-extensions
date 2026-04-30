@@ -44,11 +44,14 @@ export default class CoreStatsExtension extends Extension {
             this._settings.get_int('refresh-interval'), 
             this._updateStats.bind(this));
             
-        this._settingsId = this._settings.connect('changed::refresh-interval', () => {
-            if (this._updateId) GLib.source_remove(this._updateId);
-            this._updateId = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 
-                this._settings.get_int('refresh-interval'), 
-                this._updateStats.bind(this));
+        this._settingsId = this._settings.connect('changed', (settings, key) => {
+            if (key === 'refresh-interval') {
+                if (this._updateId) GLib.source_remove(this._updateId);
+                this._updateId = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 
+                    this._settings.get_int('refresh-interval'), 
+                    this._updateStats.bind(this));
+            }
+            this._updateDisplay();
         });
 
         this._updateStats();
@@ -240,9 +243,26 @@ export default class CoreStatsExtension extends Extension {
             let ui = this._uiItems[index];
             if (!ui) return;
 
-            let text = `${item.usage}% ${item.temp}°C`;
+            let showTemp = false;
+            try {
+                showTemp = this._settings.get_boolean(`show-${item.type}-temp`);
+            } catch (e) {}
+
+            let showUsage = false;
+            try {
+                showUsage = this._settings.get_boolean(`show-${item.type}-usage`);
+            } catch (e) {}
+
+            let parts = [];
+            if (showUsage) parts.push(`${item.usage}%`);
+            if (showTemp) parts.push(`${item.temp}°C`);
+
+            let text = parts.join(' ');
             ui.label.set_text(text);
-            ui.label.style = this._getTempStyle(item.temp, warn, crit);
+            ui.label.style = showTemp ? this._getTempStyle(item.temp, warn, crit) : '';
+
+            // Toggle visibility in the panel
+            ui.box.visible = (showTemp || showUsage);
 
             ui.menuLabel.label.set_text(`${item.displayName}: ${item.usage}% usage | ${item.temp}°C`);
         });

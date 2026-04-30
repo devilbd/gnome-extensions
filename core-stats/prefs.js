@@ -20,15 +20,45 @@ export default class CoreStatsPreferences extends ExtensionPreferences {
         refreshRow.add_suffix(refreshSpin);
         group.add(refreshRow);
 
-        // CPU Usage Toggle
+        // Visibility Group
+        const visibilityGroup = new Adw.PreferencesGroup({ title: 'Panel Visibility' });
+        page.add(visibilityGroup);
+
+        // CPU Settings
+        const cpuTempRow = new Adw.SwitchRow({ title: 'Show CPU Temperature' });
+        settings.bind('show-cpu-temp', cpuTempRow, 'active', Gio.SettingsBindFlags.DEFAULT);
+        visibilityGroup.add(cpuTempRow);
+
         const cpuUsageRow = new Adw.SwitchRow({ title: 'Show CPU Usage' });
         settings.bind('show-cpu-usage', cpuUsageRow, 'active', Gio.SettingsBindFlags.DEFAULT);
-        group.add(cpuUsageRow);
+        visibilityGroup.add(cpuUsageRow);
 
-        // GPU Usage Toggle
+        // GPU Settings
+        const gpuTempRow = new Adw.SwitchRow({ title: 'Show GPU Temperature' });
+        settings.bind('show-gpu-temp', gpuTempRow, 'active', Gio.SettingsBindFlags.DEFAULT);
+        visibilityGroup.add(gpuTempRow);
+
         const gpuUsageRow = new Adw.SwitchRow({ title: 'Show GPU Usage' });
         settings.bind('show-gpu-usage', gpuUsageRow, 'active', Gio.SettingsBindFlags.DEFAULT);
-        group.add(gpuUsageRow);
+        visibilityGroup.add(gpuUsageRow);
+
+        // NVMe Settings
+        const nvmeTempRow = new Adw.SwitchRow({ title: 'Show NVMe Temperature' });
+        settings.bind('show-nvme-temp', nvmeTempRow, 'active', Gio.SettingsBindFlags.DEFAULT);
+        visibilityGroup.add(nvmeTempRow);
+
+        const nvmeUsageRow = new Adw.SwitchRow({ title: 'Show NVMe Usage' });
+        settings.bind('show-nvme-usage', nvmeUsageRow, 'active', Gio.SettingsBindFlags.DEFAULT);
+        visibilityGroup.add(nvmeUsageRow);
+
+        // RAM Settings
+        const ramTempRow = new Adw.SwitchRow({ title: 'Show RAM Temperature' });
+        settings.bind('show-ram-temp', ramTempRow, 'active', Gio.SettingsBindFlags.DEFAULT);
+        visibilityGroup.add(ramTempRow);
+
+        const ramUsageRow = new Adw.SwitchRow({ title: 'Show RAM Usage' });
+        settings.bind('show-ram-usage', ramUsageRow, 'active', Gio.SettingsBindFlags.DEFAULT);
+        visibilityGroup.add(ramUsageRow);
 
         // Thresholds Group
         const thresholdGroup = new Adw.PreferencesGroup({ title: 'Thresholds' });
