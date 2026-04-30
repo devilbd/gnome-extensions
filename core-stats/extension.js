@@ -72,7 +72,7 @@ export default class CoreStatsExtension extends Extension {
             this._settingsId = null;
         }
         if (this._container) {
-            Main.layoutManager.removeChrome(this._container);
+            global.window_group.remove_child(this._container);
             this._container.destroy();
             this._container = null;
         }
@@ -138,9 +138,9 @@ export default class CoreStatsExtension extends Extension {
         this._container = new St.BoxLayout({
             vertical: true,
             style_class: 'core-stats-container',
-            reactive: true,
-            can_focus: true,
-            track_hover: true
+            reactive: false,
+            can_focus: false,
+            track_hover: false
         });
 
         // Header
@@ -197,60 +197,17 @@ export default class CoreStatsExtension extends Extension {
             });
         });
 
-        // Add to layout manager
-        Main.layoutManager.addChrome(this._container, {
-            trackFullscreen: true
-        });
+        // Add to layout manager - place it in the window group at the bottom (behind windows)
+        global.window_group.insert_child_at_index(this._container, 0);
 
         // Position it from settings
         this._container.set_position(
             this._settings.get_int('widget-x'),
             this._settings.get_int('widget-y')
         );
-
-        // Make it draggable
-        this._makeDraggable(this._container);
     }
 
-    _makeDraggable(actor) {
-        let dragging = false;
-        let offset = [0, 0];
 
-        actor.connect('button-press-event', (actor, event) => {
-            dragging = true;
-            let [x, y] = event.get_coords();
-            let [ax, ay] = actor.get_position();
-            offset = [x - ax, y - ay];
-            Clutter.grab_pointer(actor);
-            actor.add_style_class_name('dragging');
-            return Clutter.EVENT_STOP;
-        });
-
-        actor.connect('button-release-event', (actor) => {
-            if (dragging) {
-                dragging = false;
-                Clutter.ungrab_pointer();
-                actor.remove_style_class_name('dragging');
-                
-                // Save new position
-                let [x, y] = actor.get_position();
-                this._settings.set_int('widget-x', Math.round(x));
-                this._settings.set_int('widget-y', Math.round(y));
-                
-                return Clutter.EVENT_STOP;
-            }
-            return Clutter.EVENT_PROPAGATE;
-        });
-
-        actor.connect('motion-event', (actor, event) => {
-            if (dragging) {
-                let [x, y] = event.get_coords();
-                actor.set_position(x - offset[0], y - offset[1]);
-                return Clutter.EVENT_STOP;
-            }
-            return Clutter.EVENT_PROPAGATE;
-        });
-    }
 
     _updateStats() {
         this._monitoredItems.forEach((item, index) => {

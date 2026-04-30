@@ -8,16 +8,9 @@
     transition-duration: 200ms;
 }
 
-.core-stats-container:hover {
-    background-color: rgba(40, 40, 40, 0.8);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-}
 
-.core-stats-container.dragging {
-    background-color: rgba(50, 50, 50, 0.9);
-    opacity: 0.8;
-    scale: 1.02;
-}
+
+
 
 .core-stats-header {
     font-size: 1.1em;
