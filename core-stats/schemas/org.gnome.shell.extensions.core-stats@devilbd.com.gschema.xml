@@ -81,5 +81,17 @@
       <default>280</default>
       <summary>Widget width</summary>
     </key>
+    <key name="widget-orientation" type="i">
+      <default>0</default>
+      <summary>Widget orientation (0: vertical, 1: horizontal)</summary>
+    </key>
+    <key name="widget-max-width" type="i">
+      <default>0</default>
+      <summary>Widget size X (0 for auto)</summary>
+    </key>
+    <key name="widget-max-height" type="i">
+      <default>0</default>
+      <summary>Widget size Y (0 for auto)</summary>
+    </key>
   </schema>
 </schemalist>

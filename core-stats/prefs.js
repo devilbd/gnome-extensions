@@ -114,14 +114,33 @@ export default class CoreStatsPreferences extends ExtensionPreferences {
         yRow.add_suffix(ySpin);
         positionGroup.add(yRow);
 
-        const widthRow = new Adw.ActionRow({ title: 'Widget Width' });
-        const widthSpin = new Gtk.SpinButton({
-            adjustment: new Gtk.Adjustment({ lower: 100, upper: 1000, step_increment: 10 }),
+
+        const orientationRow = new Adw.ComboRow({
+            title: 'Widget Orientation',
+            model: new Gtk.StringList({
+                strings: ['Vertical', 'Horizontal']
+            })
+        });
+        settings.bind('widget-orientation', orientationRow, 'selected', Gio.SettingsBindFlags.DEFAULT);
+        positionGroup.add(orientationRow);
+
+        const maxWidthRow = new Adw.ActionRow({ title: 'Widget Size X (0 for automatic)' });
+        const maxWidthSpin = new Gtk.SpinButton({
+            adjustment: new Gtk.Adjustment({ lower: 0, upper: 2000, step_increment: 10 }),
             valign: Gtk.Align.CENTER
         });
-        settings.bind('widget-width', widthSpin, 'value', Gio.SettingsBindFlags.DEFAULT);
-        widthRow.add_suffix(widthSpin);
-        positionGroup.add(widthRow);
+        settings.bind('widget-max-width', maxWidthSpin, 'value', Gio.SettingsBindFlags.DEFAULT);
+        maxWidthRow.add_suffix(maxWidthSpin);
+        positionGroup.add(maxWidthRow);
+
+        const maxHeightRow = new Adw.ActionRow({ title: 'Widget Size Y (0 for automatic)' });
+        const maxHeightSpin = new Gtk.SpinButton({
+            adjustment: new Gtk.Adjustment({ lower: 0, upper: 2000, step_increment: 10 }),
+            valign: Gtk.Align.CENTER
+        });
+        settings.bind('widget-max-height', maxHeightSpin, 'value', Gio.SettingsBindFlags.DEFAULT);
+        maxHeightRow.add_suffix(maxHeightSpin);
+        positionGroup.add(maxHeightRow);
 
         window.add(page);
     }

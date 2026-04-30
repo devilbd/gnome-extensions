@@ -40,46 +40,63 @@ const SENSOR_TYPES = {
 };
 
 export default class CoreStatsExtension extends Extension {
-    async enable() {
+    enable() {
         this._settings = this.getSettings();
+        if (!this._settings) return;
+
         this._monitoredItems = [];
         this._prevCpuTotal = 0;
         this._prevCpuIdle = 0;
 
-        await this._initSensors();
-        
-        if (!this._settings) return;
-
+        // Initialize display with a placeholder or empty container
         this._buildUi();
         
-        this._updateId = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 
-            this._settings.get_int('refresh-interval'), 
-            () => {
-                this._updateStats().catch(e => logError(e, 'CoreStats'));
-                return GLib.SOURCE_CONTINUE;
-            });
-            
+        // Connect settings
         this._settingsId = this._settings.connect('changed', (settings, key) => {
             if (key === 'refresh-interval') {
-                if (this._updateId) GLib.source_remove(this._updateId);
-                this._updateId = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 
-                    this._settings.get_int('refresh-interval'), 
-                    () => {
-                        this._updateStats().catch(e => logError(e, 'CoreStats'));
-                        return GLib.SOURCE_CONTINUE;
-                    });
+                this._restartTimer();
             } else if (key === 'widget-x' || key === 'widget-y') {
-                this._container.set_position(
-                    this._settings.get_int('widget-x'),
-                    this._settings.get_int('widget-y')
-                );
-            } else if (key === 'widget-width') {
-                this._container.set_width(this._settings.get_int('widget-width'));
+                if (this._container) {
+                    this._container.set_position(
+                        this._settings.get_int('widget-x'),
+                        this._settings.get_int('widget-y')
+                    );
+                }
+            } else if (key === 'widget-width' || key === 'widget-max-width' || key === 'widget-max-height' || key === 'widget-orientation') {
+                this._buildUi();
             }
             this._updateDisplay();
         });
 
+        // Use a small timeout to ensure Shell is ready before final UI build
+        GLib.timeout_add(GLib.PRIORITY_DEFAULT, 100, () => {
+            this._initAsync().catch(e => logError(e, 'CoreStats'));
+            return GLib.SOURCE_REMOVE;
+        });
+    }
+
+    async _initAsync() {
+        await this._initSensors();
+        this._buildUi();
         await this._updateStats();
+        this._restartTimer();
+    }
+
+    _restartTimer() {
+        if (this._updateId) {
+            GLib.source_remove(this._updateId);
+            this._updateId = null;
+        }
+        
+        let interval = this._settings.get_int('refresh-interval');
+        if (interval < 1) interval = 1;
+
+        this._updateId = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 
+            interval, 
+            () => {
+                this._updateStats().catch(e => logError(e, 'CoreStats'));
+                return GLib.SOURCE_CONTINUE;
+            });
     }
 
     disable() {
@@ -113,7 +130,7 @@ export default class CoreStatsExtension extends Extension {
                 let name = contents.trim();
                 let type = null;
                 for (let t in SENSOR_TYPES) {
-                    if (SENSOR_TYPES[t].names.includes(name)) {
+                    if (SENSOR_TYPES[t].names && SENSOR_TYPES[t].names.includes(name)) {
                         type = t;
                         break;
                     }
@@ -215,6 +232,13 @@ export default class CoreStatsExtension extends Extension {
     }
 
     _buildUi() {
+        if (this._container) {
+            let parent = this._container.get_parent();
+            if (parent) parent.remove_child(this._container);
+            this._container.destroy();
+            this._container = null;
+        }
+
         this._container = new St.BoxLayout({
             vertical: true,
             style_class: 'core-stats-container',
@@ -233,10 +257,113 @@ export default class CoreStatsExtension extends Extension {
         header.clutter_text.ellipsize = Pango.EllipsizeMode.NONE;
         this._container.add_child(header);
 
+        let orientation = this._settings.get_int('widget-orientation');
+        let isVertical = orientation === 0;
+
+        // Container for scroll buttons and scrollview
+        let scrollLayout = new St.BoxLayout({
+            vertical: isVertical,
+            x_expand: true,
+            y_expand: true,
+            reactive: true
+        });
+        this._container.add_child(scrollLayout);
+
+        // Prev Button
+        let prevButton = new St.Button({
+            style_class: 'core-stats-scroll-button',
+            reactive: true,
+            can_focus: true,
+            track_hover: true,
+            x_expand: isVertical,
+            y_expand: !isVertical,
+            x_align: Clutter.ActorAlign.FILL,
+            y_align: Clutter.ActorAlign.FILL,
+            child: new St.Icon({
+                icon_name: isVertical ? 'go-up-symbolic' : 'go-previous-symbolic',
+                style_class: 'core-stats-scroll-icon'
+            })
+        });
+        scrollLayout.add_child(prevButton);
+
+        let scrollView = new St.ScrollView({
+            hscrollbar_policy: St.PolicyType.NEVER,
+            vscrollbar_policy: St.PolicyType.NEVER,
+            style_class: 'core-stats-scrollview',
+            x_expand: true,
+            y_expand: true,
+            reactive: true,
+            enable_mouse_scrolling: true
+        });
+        scrollLayout.add_child(scrollView);
+
+        // Next Button
+        let nextButton = new St.Button({
+            style_class: 'core-stats-scroll-button',
+            reactive: true,
+            can_focus: true,
+            track_hover: true,
+            x_expand: isVertical,
+            y_expand: !isVertical,
+            x_align: Clutter.ActorAlign.FILL,
+            y_align: Clutter.ActorAlign.FILL,
+            child: new St.Icon({
+                icon_name: isVertical ? 'go-down-symbolic' : 'go-next-symbolic',
+                style_class: 'core-stats-scroll-icon'
+            })
+        });
+        scrollLayout.add_child(nextButton);
+
+        // Scrolling Logic
+        const scrollStep = 100;
+        prevButton.connect('clicked', () => {
+            let adj = isVertical ? scrollView.vadjustment : scrollView.hadjustment;
+            let newValue = Math.max(adj.lower, adj.value - scrollStep);
+            adj.value = newValue;
+        });
+        nextButton.connect('clicked', () => {
+            let adj = isVertical ? scrollView.vadjustment : scrollView.hadjustment;
+            let newValue = Math.min(adj.upper - adj.page_size, adj.value + scrollStep);
+            adj.value = newValue;
+        });
+
+        let maxWidth = this._settings.get_int('widget-max-width');
+        let maxHeight = this._settings.get_int('widget-max-height');
+        
+        // Use widget-width as fallback if max-width is 0
+        if (maxWidth <= 0) maxWidth = this._settings.get_int('widget-width');
+        
+        let containerStyle = '';
+
+        if (maxWidth > 0) {
+            containerStyle += `width: ${maxWidth}px; `;
+            this._container.set_width(maxWidth);
+            this._container.add_style_class_name('has-max-width');
+        }
+        if (maxHeight > 0) {
+            containerStyle += `height: ${maxHeight}px; `;
+            this._container.set_height(maxHeight);
+            this._container.add_style_class_name('has-max-height');
+        }
+
+        if (containerStyle) this._container.style = containerStyle;
+        
+        let contentBox = new St.BoxLayout({
+            vertical: isVertical,
+            style_class: 'core-stats-content',
+            x_expand: true,
+            y_expand: true,
+            reactive: true
+        });
+        scrollView.set_child(contentBox);
+
         this._uiItems = [];
 
         this._monitoredItems.forEach(item => {
-            let row = new St.BoxLayout({ style_class: 'core-stats-row', vertical: true });
+            let row = new St.BoxLayout({ 
+                style_class: isVertical ? 'core-stats-row' : 'core-stats-row-horizontal', 
+                vertical: true 
+            });
             
             let infoBox = new St.BoxLayout({ style_class: 'core-stats-info' });
             let icon;
@@ -255,15 +382,18 @@ export default class CoreStatsExtension extends Extension {
             let label = new St.Label({ 
                 text: item.displayName, 
                 style_class: 'core-stats-label',
-                y_align: Clutter.ActorAlign.CENTER 
+                y_align: Clutter.ActorAlign.CENTER,
+                x_expand: true
             });
+            label.clutter_text.ellipsize = Pango.EllipsizeMode.END;
+
             let valueLabel = new St.Label({ 
                 text: '--', 
                 style_class: 'core-stats-value',
-                x_expand: true,
                 x_align: Clutter.ActorAlign.END,
                 y_align: Clutter.ActorAlign.CENTER 
             });
+            valueLabel.clutter_text.ellipsize = Pango.EllipsizeMode.NONE;
 
             infoBox.add_child(icon);
             infoBox.add_child(label);
@@ -281,7 +411,7 @@ export default class CoreStatsExtension extends Extension {
             row.add_child(infoBox);
             row.add_child(barBg);
 
-            this._container.add_child(row);
+            contentBox.add_child(row);
 
             this._uiItems.push({
                 row: row,
@@ -290,15 +420,21 @@ export default class CoreStatsExtension extends Extension {
             });
         });
 
-        // Add to the background group to stay on the desktop level
-        Main.layoutManager._backgroundGroup.add_child(this._container);
+        // Add to the UI group and ensure it's visible.
+        // We want it to be on the "desktop" level, meaning behind windows.
+        // Placing it above the background group ensures it's visible but doesn't cover windows.
+        Main.uiGroup.add_child(this._container);
+        if (Main.layoutManager._backgroundGroup) {
+            Main.uiGroup.set_child_above_sibling(this._container, Main.layoutManager._backgroundGroup);
+        } else {
+            Main.uiGroup.set_child_below_sibling(this._container, null);
+        }
 
         // Position it from settings
         this._container.set_position(
             this._settings.get_int('widget-x'),
             this._settings.get_int('widget-y')
         );
-        this._container.set_width(this._settings.get_int('widget-width'));
     }
 
 
@@ -514,13 +650,15 @@ export default class CoreStatsExtension extends Extension {
                 ui.valueLabel.remove_style_class_name('status-critical');
             }
 
-            let fullWidth = 150;
+            let fullWidth = 100; // Lower default to avoid pushing container width
             let barBg = ui.barFill.get_parent();
-            if (barBg && barBg.width > 0) {
+            if (barBg && barBg.width > 1) {
                 fullWidth = barBg.width;
+            } else if (this._container.width > 40) {
+                fullWidth = this._container.width - 40; // Fallback to container width minus padding
             }
             
-            let targetWidth = (item.usage / 100) * fullWidth;
+            let targetWidth = Math.max(0, (item.usage / 100) * fullWidth);
             ui.barFill.width = targetWidth;
 
             ui.row.visible = (showTemp || showUsage);
