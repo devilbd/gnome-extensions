@@ -32,25 +32,34 @@ const SENSOR_TYPES = {
 };
 
 export default class CoreStatsExtension extends Extension {
-    enable() {
+    async enable() {
         this._settings = this.getSettings();
         this._monitoredItems = [];
         this._prevCpuTotal = 0;
         this._prevCpuIdle = 0;
 
-        this._initSensors();
+        await this._initSensors();
+        
+        if (!this._settings) return;
+
         this._buildUi();
         
         this._updateId = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 
             this._settings.get_int('refresh-interval'), 
-            this._updateStats.bind(this));
+            () => {
+                this._updateStats().catch(e => console.error(e));
+                return GLib.SOURCE_CONTINUE;
+            });
             
         this._settingsId = this._settings.connect('changed', (settings, key) => {
             if (key === 'refresh-interval') {
                 if (this._updateId) GLib.source_remove(this._updateId);
                 this._updateId = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 
                     this._settings.get_int('refresh-interval'), 
-                    this._updateStats.bind(this));
+                    () => {
+                        this._updateStats().catch(e => console.error(e));
+                        return GLib.SOURCE_CONTINUE;
+                    });
             } else if (key === 'widget-x' || key === 'widget-y') {
                 this._container.set_position(
                     this._settings.get_int('widget-x'),
@@ -62,7 +71,7 @@ export default class CoreStatsExtension extends Extension {
             this._updateDisplay();
         });
 
-        this._updateStats();
+        await this._updateStats();
     }
 
     disable() {
@@ -84,7 +93,7 @@ export default class CoreStatsExtension extends Extension {
         this._monitoredItems = [];
     }
 
-    _initSensors() {
+    async _initSensors() {
         this._monitoredItems = [];
         let i = 0;
         while (true) {
@@ -92,7 +101,8 @@ export default class CoreStatsExtension extends Extension {
             if (!GLib.file_test(path, GLib.FileTest.EXISTS)) break;
 
             try {
-                let name = GLib.file_get_contents(`${path}/name`)[1].toString().trim();
+                let contents = await this._readFile(`${path}/name`);
+                let name = contents.trim();
                 let type = null;
                 for (let t in SENSOR_TYPES) {
                     if (SENSOR_TYPES[t].names.includes(name)) {
@@ -227,29 +237,43 @@ export default class CoreStatsExtension extends Extension {
 
 
 
-    _updateStats() {
-        this._monitoredItems.forEach((item, index) => {
-            this._readTemp(item);
-            this._readUsage(item);
-        });
+    async _updateStats() {
+        if (!this._monitoredItems || this._monitoredItems.length === 0) return;
+
+        try {
+            await Promise.all(this._monitoredItems.map(async (item) => {
+                await this._readTemp(item);
+                await this._readUsage(item);
+            }));
+        } catch (e) {
+            console.error(`CoreStats: Error updating stats: ${e}`);
+        }
 
         this._updateDisplay();
-        return GLib.SOURCE_CONTINUE;
     }
 
-    _readTemp(item) {
+    async _readTemp(item) {
         try {
-            let tempStr = GLib.file_get_contents(`${item.path}/temp1_input`)[1].toString().trim();
+            let contents = await this._readFile(`${item.path}/temp1_input`);
+            let tempStr = contents.trim();
             item.temp = Math.round(parseInt(tempStr) / 1000);
         } catch (e) {}
     }
 
-    _readUsage(item) {
+    async _readUsage(item) {
         try {
             if (item.type === 'cpu') {
-                let stat = GLib.file_get_contents('/proc/stat')[1].toString().split('\n')[0].split(/\s+/);
+                let contents = await this._readFile('/proc/stat');
+                if (!contents) return;
+                let line = contents.split('\n')[0];
+                let stat = line.trim().split(/\s+/);
+                if (stat.length < 5) return;
+                
                 let idle = parseInt(stat[4]);
-                let total = stat.slice(1).reduce((acc, n) => acc + parseInt(n), 0);
+                let total = stat.slice(1).reduce((acc, n) => {
+                    let val = parseInt(n);
+                    return acc + (isNaN(val) ? 0 : val);
+                }, 0);
                 
                 let diffTotal = total - this._prevCpuTotal;
                 let diffIdle = idle - this._prevCpuIdle;
@@ -260,27 +284,39 @@ export default class CoreStatsExtension extends Extension {
                 this._prevCpuTotal = total;
                 this._prevCpuIdle = idle;
             } else if (item.type === 'gpu' && item.usagePath) {
-                let usageStr = GLib.file_get_contents(item.usagePath)[1].toString().trim();
-                item.usage = parseInt(usageStr);
-            } else if (item.type === 'ram') {
-                let meminfo = GLib.file_get_contents('/proc/meminfo')[1].toString();
-                let total = parseInt(meminfo.match(/MemTotal:\s+(\d+)/)[1]);
-                let avail = parseInt(meminfo.match(/MemAvailable:\s+(\d+)/)[1]);
-                item.usage = Math.round(100 * (total - avail) / total);
-            } else if (item.type === 'nvme' && item.blockPath) {
-                let stat = GLib.file_get_contents(item.blockPath)[1].toString().trim().split(/\s+/);
-                let ioTime = parseInt(stat[9]);
-                let now = GLib.get_monotonic_time();
-                
-                if (item.prevIoTime !== undefined) {
-                    let diffIo = ioTime - item.prevIoTime;
-                    let diffTime = (now - item.prevTime) / 1000;
-                    if (diffTime > 0) {
-                        item.usage = Math.min(100, Math.round(100 * diffIo / diffTime));
-                    }
+                let contents = await this._readFile(item.usagePath);
+                if (contents) {
+                    let usageStr = contents.trim();
+                    item.usage = parseInt(usageStr);
                 }
-                item.prevIoTime = ioTime;
-                item.prevTime = now;
+            } else if (item.type === 'ram') {
+                let contents = await this._readFile('/proc/meminfo');
+                if (!contents) return;
+                let totalMatch = contents.match(/MemTotal:\s+(\d+)/);
+                let availMatch = contents.match(/MemAvailable:\s+(\d+)/);
+                
+                if (totalMatch && availMatch) {
+                    let total = parseInt(totalMatch[1]);
+                    let avail = parseInt(availMatch[1]);
+                    item.usage = Math.round(100 * (total - avail) / total);
+                }
+            } else if (item.type === 'nvme' && item.blockPath) {
+                let contents = await this._readFile(item.blockPath);
+                if (contents) {
+                    let stat = contents.trim().split(/\s+/);
+                    let ioTime = parseInt(stat[9]);
+                    let now = GLib.get_monotonic_time();
+                    
+                    if (item.prevIoTime !== undefined) {
+                        let diffIo = ioTime - item.prevIoTime;
+                        let diffTime = (now - item.prevTime) / 1000;
+                        if (diffTime > 0) {
+                            item.usage = Math.min(100, Math.round(100 * diffIo / diffTime));
+                        }
+                    }
+                    item.prevIoTime = ioTime;
+                    item.prevTime = now;
+                }
             }
         } catch (e) {}
     }
@@ -334,5 +370,36 @@ export default class CoreStatsExtension extends Extension {
 
     _getTempStyle(temp, warn, crit) {
         return '';
+    }
+
+    async _readFile(path) {
+        try {
+            let file = Gio.File.new_for_path(path);
+            return new Promise((resolve, reject) => {
+                file.load_contents_async(null, (source, res) => {
+                    try {
+                        let result = source.load_contents_finish(res);
+                        // Handle both old [success, contents, etag] and new [contents, etag] signatures
+                        let contents = result[0];
+                        if (typeof contents === 'boolean') {
+                            contents = result[1];
+                        }
+                        
+                        if (contents instanceof Uint8Array || (contents && contents.constructor && contents.constructor.name === 'Uint8Array')) {
+                            resolve(new TextDecoder().decode(contents));
+                        } else if (contents && typeof contents.toString === 'function') {
+                            resolve(contents.toString());
+                        } else {
+                            resolve("");
+                        }
+                    } catch (e) {
+                        reject(e);
+                    }
+                });
+            });
+        } catch (e) {
+            console.error(`CoreStats: Failed to read file ${path}: ${e}`);
+            return "";
+        }
     }
 }

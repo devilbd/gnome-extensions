@@ -2,7 +2,7 @@
   "uuid": "core-stats@devilbd.com",
   "settings-schema": "org.gnome.shell.extensions.core-stats@devilbd.com",
   "name": "CORE STATS",
-  "description": "Display hardware temperatures (CPU, GPU, NVMe, etc.) in the top panel with a detailed dropdown menu",
+  "description": "Display hardware temperatures (CPU, GPU, NVMe, etc.)",
   "shell-version": [
     "45",
     "46",
@@ -12,5 +12,5 @@
     "50"
   ],
   "url": "https://github.com/devilbd/gnome-extensions/tree/main/core-stats",
-  "version": 1
+  "version": 2
 }
