@@ -39,7 +39,7 @@ export default class ClockExtension extends Extension {
             });
 
             this._updateBlur();
-            this._clockWidget.connect('repaint', this._drawClock.bind(this));
+            this._repaintId = this._clockWidget.connect('repaint', this._drawClock.bind(this));
 
             // Position: bottom-right corner with margin
             let monitor = Main.layoutManager.primaryMonitor;
@@ -119,6 +119,7 @@ export default class ClockExtension extends Extension {
         }
 
         if (this._clockWidget) {
+            if (this._repaintId) this._clockWidget.disconnect(this._repaintId);
             if (this._pressId)   this._clockWidget.disconnect(this._pressId);
             if (this._releaseId) this._clockWidget.disconnect(this._releaseId);
             Main.uiGroup.remove_child(this._clockWidget);
