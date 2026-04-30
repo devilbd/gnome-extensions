@@ -8,6 +8,8 @@
     spacing: 0;
     transition-duration: 300ms;
     overflow: hidden;
+    min-width: 200px;
+    min-height: 50px;
 }
 
 
@@ -45,18 +47,21 @@
 }
 
 .core-stats-scrollview StScrollBar {
-    padding: 2px;
+    background-color: transparent;
 }
 
 .core-stats-scrollview StScrollBar StButton#vhandle,
 .core-stats-scrollview StScrollBar StButton#hhandle {
-    background-color: rgba(255, 255, 255, 0.3);
+    background-color: rgba(255, 255, 255, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 4px;
+    margin: 2px;
 }
 
 .core-stats-scrollview StScrollBar StButton#vhandle:hover,
 .core-stats-scrollview StScrollBar StButton#hhandle:hover {
-    background-color: rgba(255, 255, 255, 0.5);
+    background-color: rgba(255, 255, 255, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
 .core-stats-info {
@@ -203,4 +208,6 @@
     color: rgba(255, 255, 255, 0.4);
     font-weight: 800;
     letter-spacing: 1.2px;
+    min-width: 90px;
+    text-align: right;
 }

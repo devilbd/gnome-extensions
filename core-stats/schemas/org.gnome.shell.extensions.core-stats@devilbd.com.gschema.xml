@@ -97,5 +97,9 @@
       <default>true</default>
       <summary>Show manual scroll buttons in the widget</summary>
     </key>
+    <key name="enable-scrolling" type="b">
+      <default>true</default>
+      <summary>Enable mouse scrolling in the widget</summary>
+    </key>
   </schema>
 </schemalist>

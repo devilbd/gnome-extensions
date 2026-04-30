@@ -62,7 +62,7 @@ export default class CoreStatsExtension extends Extension {
                         this._settings.get_int('widget-y')
                     );
                 }
-            } else if (key === 'widget-width' || key === 'widget-max-width' || key === 'widget-max-height' || key === 'widget-orientation' || key === 'show-scroll-buttons') {
+            } else if (key === 'widget-width' || key === 'widget-max-width' || key === 'widget-max-height' || key === 'widget-orientation' || key === 'show-scroll-buttons' || key === 'enable-scrolling') {
                 this._buildUi();
             }
             this._updateDisplay();
@@ -244,12 +244,20 @@ export default class CoreStatsExtension extends Extension {
             style_class: 'core-stats-container',
             reactive: true,
             can_focus: false,
-            track_hover: false
+            track_hover: false,
+            x_expand: true,
+            y_expand: true
         });
 
 
         let orientation = this._settings.get_int('widget-orientation');
         let isVertical = orientation === 0;
+        let maxWidth = this._settings.get_int('widget-max-width');
+        let maxHeight = this._settings.get_int('widget-max-height');
+        
+        // Use widget-width as fallback if max-width is 0
+        if (maxWidth <= 0) maxWidth = this._settings.get_int('widget-width');
+        if (maxWidth <= 0) maxWidth = 280; // Absolute fallback
 
         // Container for scroll buttons and scrollview
         let scrollLayout = new St.BoxLayout({
@@ -269,8 +277,8 @@ export default class CoreStatsExtension extends Extension {
                 reactive: true,
                 can_focus: true,
                 track_hover: true,
-                x_expand: isVertical,
-                y_expand: !isVertical,
+                x_expand: isVertical && maxWidth > 0,
+                y_expand: !isVertical && maxHeight > 0,
                 x_align: Clutter.ActorAlign.FILL,
                 y_align: Clutter.ActorAlign.FILL,
                 child: new St.Icon({
@@ -286,18 +294,23 @@ export default class CoreStatsExtension extends Extension {
             vertical: true,
             x_expand: true,
             y_expand: true,
+            x_align: Clutter.ActorAlign.FILL,
+            y_align: Clutter.ActorAlign.FILL,
             reactive: true
         });
         scrollLayout.add_child(scrollerSubcontainer);
 
+        let enableScrolling = this._settings.get_boolean('enable-scrolling');
         let scrollView = new St.ScrollView({
-            hscrollbar_policy: St.PolicyType.NEVER,
-            vscrollbar_policy: St.PolicyType.NEVER,
+            hscrollbar_policy: enableScrolling ? St.PolicyType.AUTOMATIC : St.PolicyType.NEVER,
+            vscrollbar_policy: enableScrolling ? St.PolicyType.AUTOMATIC : St.PolicyType.NEVER,
             style_class: 'core-stats-scrollview',
             x_expand: true,
             y_expand: true,
+            x_align: Clutter.ActorAlign.FILL,
+            y_align: Clutter.ActorAlign.FILL,
             reactive: true,
-            enable_mouse_scrolling: true
+            enable_mouse_scrolling: enableScrolling
         });
         scrollerSubcontainer.add_child(scrollView);
 
@@ -309,8 +322,8 @@ export default class CoreStatsExtension extends Extension {
                 reactive: true,
                 can_focus: true,
                 track_hover: true,
-                x_expand: isVertical,
-                y_expand: !isVertical,
+                x_expand: isVertical && maxWidth > 0,
+                y_expand: !isVertical && maxHeight > 0,
                 x_align: Clutter.ActorAlign.FILL,
                 y_align: Clutter.ActorAlign.FILL,
                 child: new St.Icon({
@@ -337,12 +350,6 @@ export default class CoreStatsExtension extends Extension {
                 adj.value = newValue;
             });
         }
-
-        let maxWidth = this._settings.get_int('widget-max-width');
-        let maxHeight = this._settings.get_int('widget-max-height');
-        
-        // Use widget-width as fallback if max-width is 0
-        if (maxWidth <= 0) maxWidth = this._settings.get_int('widget-width');
         
         let containerStyle = '';
 
@@ -350,11 +357,16 @@ export default class CoreStatsExtension extends Extension {
             containerStyle += `width: ${maxWidth}px; `;
             this._container.set_width(maxWidth);
             this._container.add_style_class_name('has-max-width');
+        } else {
+            this._container.set_width(-1);
         }
+        
         if (maxHeight > 0) {
             containerStyle += `height: ${maxHeight}px; `;
             this._container.set_height(maxHeight);
             this._container.add_style_class_name('has-max-height');
+        } else {
+            this._container.set_height(-1);
         }
 
         if (containerStyle) this._container.style = containerStyle;
@@ -396,7 +408,6 @@ export default class CoreStatsExtension extends Extension {
                 y_align: Clutter.ActorAlign.CENTER,
                 x_expand: true
             });
-            label.clutter_text.ellipsize = Pango.EllipsizeMode.END;
 
             let valueLabel = new St.Label({ 
                 text: '--', 
@@ -404,7 +415,6 @@ export default class CoreStatsExtension extends Extension {
                 x_align: Clutter.ActorAlign.END,
                 y_align: Clutter.ActorAlign.CENTER 
             });
-            valueLabel.clutter_text.ellipsize = Pango.EllipsizeMode.NONE;
 
             infoBox.add_child(icon);
             infoBox.add_child(label);
@@ -434,26 +444,34 @@ export default class CoreStatsExtension extends Extension {
         // Footer with title
         let footer = new St.BoxLayout({
             style_class: 'core-stats-footer',
-            x_align: Clutter.ActorAlign.END,
+            x_expand: true
         });
         let footerLabel = new St.Label({
             text: 'CORE STATS',
             style_class: 'core-stats-footer-label',
-            x_expand: true
+            x_expand: true,
+            x_align: Clutter.ActorAlign.END
         });
         footerLabel.clutter_text.ellipsize = Pango.EllipsizeMode.NONE;
         footerLabel.clutter_text.x_align = Clutter.ActorAlign.END;
         footer.add_child(footerLabel);
         scrollerSubcontainer.add_child(footer);
 
-        // Add to the UI group and ensure it's visible.
-        // We want it to be on the "desktop" level, meaning behind windows.
-        // Placing it above the background group ensures it's visible but doesn't cover windows.
+        // Add to the UI group and position it correctly.
         Main.uiGroup.add_child(this._container);
-        if (Main.layoutManager._backgroundGroup) {
-            Main.uiGroup.set_child_above_sibling(this._container, Main.layoutManager._backgroundGroup);
-        } else {
-            Main.uiGroup.set_child_below_sibling(this._container, null);
+        
+        try {
+            let windowGroup = Main.layoutManager.windowGroup;
+            if (windowGroup && windowGroup.get_parent() === Main.uiGroup) {
+                Main.uiGroup.set_child_below_sibling(this._container, windowGroup);
+            } else {
+                // If we can't find the window group or it's not where we expect,
+                // place it on top to ensure it's at least visible.
+                Main.uiGroup.set_child_above_sibling(this._container, null);
+            }
+        } catch (e) {
+            console.warn('CoreStats: Could not set z-order:', e);
+            // Fallback: stay on top
         }
 
         // Position it from settings

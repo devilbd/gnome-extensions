@@ -146,6 +146,10 @@ export default class CoreStatsPreferences extends ExtensionPreferences {
         settings.bind('show-scroll-buttons', scrollButtonsRow, 'active', Gio.SettingsBindFlags.DEFAULT);
         positionGroup.add(scrollButtonsRow);
 
+        const enableScrollingRow = new Adw.SwitchRow({ title: 'Enable Mouse Scrolling' });
+        settings.bind('enable-scrolling', enableScrollingRow, 'active', Gio.SettingsBindFlags.DEFAULT);
+        positionGroup.add(enableScrollingRow);
+
         window.add(page);
     }
 }
