@@ -53,5 +53,13 @@
       <default>95</default>
       <summary>Temperature critical threshold in Celsius</summary>
     </key>
+    <key name="widget-x" type="i">
+      <default>20</default>
+      <summary>Widget X coordinate</summary>
+    </key>
+    <key name="widget-y" type="i">
+      <default>100</default>
+      <summary>Widget Y coordinate</summary>
+    </key>
   </schema>
 </schemalist>

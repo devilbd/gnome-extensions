@@ -1,13 +1,90 @@
-.core-stats-item {
-    spacing: 4px;
-    padding: 0 4px;
+.core-stats-container {
+    background-color: rgba(30, 30, 30, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    padding: 16px;
+    spacing: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    transition-duration: 200ms;
 }
 
-.core-stats-item StIcon {
-    icon-size: 16px;
+.core-stats-container:hover {
+    background-color: rgba(40, 40, 40, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
-.core-stats-item StLabel {
+.core-stats-container.dragging {
+    background-color: rgba(50, 50, 50, 0.9);
+    opacity: 0.8;
+    scale: 1.02;
+}
+
+.core-stats-header {
+    font-size: 1.1em;
+    font-weight: bold;
+    color: #ffffff;
+    margin-bottom: 8px;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    letter-spacing: 1px;
+}
+
+.core-stats-row {
+    spacing: 12px;
+    padding: 4px 0;
+}
+
+.core-stats-info {
+    spacing: 8px;
+}
+
+.core-stats-label {
     font-size: 0.9em;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.9);
+    min-width: 60px;
+}
+
+.core-stats-value {
+    font-size: 0.85em;
+    color: rgba(255, 255, 255, 0.7);
     font-family: "JetBrains Mono", "Roboto Mono", monospace;
+    text-align: right;
+}
+
+.core-stats-bar-bg {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    height: 8px;
+    min-width: 150px;
+}
+
+.core-stats-bar-fill {
+    border-radius: 4px;
+    height: 8px;
+    background-gradient-direction: horizontal;
+}
+
+.core-stats-bar-cpu {
+    background-gradient-start: #3498db;
+    background-gradient-end: #2ecc71;
+}
+
+.core-stats-bar-gpu {
+    background-gradient-start: #9b59b6;
+    background-gradient-end: #3498db;
+}
+
+.core-stats-bar-ram {
+    background-gradient-start: #f1c40f;
+    background-gradient-end: #e67e22;
+}
+
+.core-stats-bar-nvme {
+    background-gradient-start: #e74c3c;
+    background-gradient-end: #c0392b;
+}
+
+.core-stats-icon {
+    icon-size: 18px;
+    color: #ffffff;
 }

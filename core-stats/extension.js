@@ -50,6 +50,11 @@ export default class CoreStatsExtension extends Extension {
                 this._updateId = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 
                     this._settings.get_int('refresh-interval'), 
                     this._updateStats.bind(this));
+            } else if (key === 'widget-x' || key === 'widget-y') {
+                this._container.set_position(
+                    this._settings.get_int('widget-x'),
+                    this._settings.get_int('widget-y')
+                );
             }
             this._updateDisplay();
         });
@@ -66,9 +71,10 @@ export default class CoreStatsExtension extends Extension {
             this._settings.disconnect(this._settingsId);
             this._settingsId = null;
         }
-        if (this._indicator) {
-            this._indicator.destroy();
-            this._indicator = null;
+        if (this._container) {
+            Main.layoutManager.removeChrome(this._container);
+            this._container.destroy();
+            this._container = null;
         }
         this._settings = null;
         this._monitoredItems = [];
@@ -91,7 +97,6 @@ export default class CoreStatsExtension extends Extension {
                     }
                 }
 
-                // We only care about items with temperature sensors
                 if (type && GLib.file_test(`${path}/temp1_input`, GLib.FileTest.EXISTS)) {
                     let item = {
                         type: type,
@@ -104,7 +109,6 @@ export default class CoreStatsExtension extends Extension {
                         lastUsageUpdate: 0
                     };
 
-                    // Try to find usage path for GPU
                     if (type === 'gpu') {
                         let gpuBase = `/sys/class/drm/card0/device`;
                         if (GLib.file_test(`${gpuBase}/gpu_busy_percent`, GLib.FileTest.EXISTS)) {
@@ -112,13 +116,10 @@ export default class CoreStatsExtension extends Extension {
                         }
                     }
 
-                    // For NVMe, try to find matching block device for usage stats
                     if (type === 'nvme') {
-                        // hwmon0/device is usually a symlink to ../../nvme0
-                        // We want to find nvme0n1 or similar
                         try {
                             let deviceLink = GLib.file_read_link(`${path}/device`);
-                            let deviceName = deviceLink.split('/').pop(); // e.g. "nvme0"
+                            let deviceName = deviceLink.split('/').pop();
                             item.blockPath = `/sys/block/${deviceName}n1/stat`;
                             if (!GLib.file_test(item.blockPath, GLib.FileTest.EXISTS)) {
                                 item.blockPath = null;
@@ -131,47 +132,124 @@ export default class CoreStatsExtension extends Extension {
             } catch (e) {}
             i++;
         }
-
-        // Always ensure CPU is present if possible, even if sensor name didn't match perfectly
-        if (!this._monitoredItems.find(it => it.type === 'cpu')) {
-            // Check for generic thermal zone if k10temp/coretemp not found
-            // (Skipping for now as k10temp/coretemp are very common on Linux)
-        }
     }
 
     _buildUi() {
-        this._indicator = new PanelMenu.Button(0.0, 'Core Stats Indicator', false);
-        this._box = new St.BoxLayout({ style_class: 'panel-status-indicators-box' });
-        
+        this._container = new St.BoxLayout({
+            vertical: true,
+            style_class: 'core-stats-container',
+            reactive: true,
+            can_focus: true,
+            track_hover: true
+        });
+
+        // Header
+        let header = new St.Label({
+            text: _('SYSTEM PERFORMANCE'),
+            style_class: 'core-stats-header'
+        });
+        this._container.add_child(header);
+
         this._uiItems = [];
 
-        // Add detailed menu header
-        this._indicator.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
-        let titleItem = new PopupMenu.PopupMenuItem(_('Hardware Stats'), { reactive: false });
-        titleItem.label.style = 'font-weight: bold;';
-        this._indicator.menu.addMenuItem(titleItem);
-
         this._monitoredItems.forEach(item => {
-            let itemBox = new St.BoxLayout({ style_class: 'core-stats-item' });
-            let icon = new St.Icon({ icon_name: item.icon, style_class: 'system-status-icon' });
-            let label = new St.Label({ text: '--', y_align: Clutter.ActorAlign.CENTER });
+            let row = new St.BoxLayout({ style_class: 'core-stats-row', vertical: true });
             
-            itemBox.add_child(icon);
-            itemBox.add_child(label);
-            this._box.add_child(itemBox);
-            
-            let menuLabel = new PopupMenu.PopupMenuItem(`${item.displayName}: --`, { reactive: false });
-            this._indicator.menu.addMenuItem(menuLabel);
+            let infoBox = new St.BoxLayout({ style_class: 'core-stats-info' });
+            let icon = new St.Icon({ 
+                icon_name: item.icon, 
+                style_class: 'core-stats-icon' 
+            });
+            let label = new St.Label({ 
+                text: item.displayName, 
+                style_class: 'core-stats-label',
+                y_align: Clutter.ActorAlign.CENTER 
+            });
+            let valueLabel = new St.Label({ 
+                text: '--', 
+                style_class: 'core-stats-value',
+                x_expand: true,
+                x_align: Clutter.ActorAlign.END,
+                y_align: Clutter.ActorAlign.CENTER 
+            });
+
+            infoBox.add_child(icon);
+            infoBox.add_child(label);
+            infoBox.add_child(valueLabel);
+
+            // Progress bar container
+            let barBg = new St.Bin({ style_class: 'core-stats-bar-bg', x_expand: true });
+            let barFill = new St.Bin({ 
+                style_class: `core-stats-bar-fill core-stats-bar-${item.type}`,
+                width: 0 
+            });
+            barBg.set_child(barFill);
+
+            row.add_child(infoBox);
+            row.add_child(barBg);
+
+            this._container.add_child(row);
 
             this._uiItems.push({
-                box: itemBox,
-                label: label,
-                menuLabel: menuLabel
+                row: row,
+                valueLabel: valueLabel,
+                barFill: barFill
             });
         });
 
-        this._indicator.add_child(this._box);
-        Main.panel.addToStatusArea('core-stats', this._indicator);
+        // Add to layout manager
+        Main.layoutManager.addChrome(this._container, {
+            trackFullscreen: true
+        });
+
+        // Position it from settings
+        this._container.set_position(
+            this._settings.get_int('widget-x'),
+            this._settings.get_int('widget-y')
+        );
+
+        // Make it draggable
+        this._makeDraggable(this._container);
+    }
+
+    _makeDraggable(actor) {
+        let dragging = false;
+        let offset = [0, 0];
+
+        actor.connect('button-press-event', (actor, event) => {
+            dragging = true;
+            let [x, y] = event.get_coords();
+            let [ax, ay] = actor.get_position();
+            offset = [x - ax, y - ay];
+            Clutter.grab_pointer(actor);
+            actor.add_style_class_name('dragging');
+            return Clutter.EVENT_STOP;
+        });
+
+        actor.connect('button-release-event', (actor) => {
+            if (dragging) {
+                dragging = false;
+                Clutter.ungrab_pointer();
+                actor.remove_style_class_name('dragging');
+                
+                // Save new position
+                let [x, y] = actor.get_position();
+                this._settings.set_int('widget-x', Math.round(x));
+                this._settings.set_int('widget-y', Math.round(y));
+                
+                return Clutter.EVENT_STOP;
+            }
+            return Clutter.EVENT_PROPAGATE;
+        });
+
+        actor.connect('motion-event', (actor, event) => {
+            if (dragging) {
+                let [x, y] = event.get_coords();
+                actor.set_position(x - offset[0], y - offset[1]);
+                return Clutter.EVENT_STOP;
+            }
+            return Clutter.EVENT_PROPAGATE;
+        });
     }
 
     _updateStats() {
@@ -216,13 +294,12 @@ export default class CoreStatsExtension extends Extension {
                 item.usage = Math.round(100 * (total - avail) / total);
             } else if (item.type === 'nvme' && item.blockPath) {
                 let stat = GLib.file_get_contents(item.blockPath)[1].toString().trim().split(/\s+/);
-                // Field 10 is milliseconds spent doing I/Os
                 let ioTime = parseInt(stat[9]);
                 let now = GLib.get_monotonic_time();
                 
                 if (item.prevIoTime !== undefined) {
                     let diffIo = ioTime - item.prevIoTime;
-                    let diffTime = (now - item.prevTime) / 1000; // ms
+                    let diffTime = (now - item.prevTime) / 1000;
                     if (diffTime > 0) {
                         item.usage = Math.min(100, Math.round(100 * diffIo / diffTime));
                     }
@@ -234,7 +311,7 @@ export default class CoreStatsExtension extends Extension {
     }
 
     _updateDisplay() {
-        if (!this._indicator) return;
+        if (!this._container) return;
 
         let warn = this._settings.get_int('warning-threshold');
         let crit = this._settings.get_int('critical-threshold');
@@ -243,28 +320,32 @@ export default class CoreStatsExtension extends Extension {
             let ui = this._uiItems[index];
             if (!ui) return;
 
-            let showTemp = false;
-            try {
-                showTemp = this._settings.get_boolean(`show-${item.type}-temp`);
-            } catch (e) {}
-
-            let showUsage = false;
-            try {
-                showUsage = this._settings.get_boolean(`show-${item.type}-usage`);
-            } catch (e) {}
+            let showTemp = this._settings.get_boolean(`show-${item.type}-temp`);
+            let showUsage = this._settings.get_boolean(`show-${item.type}-usage`);
 
             let parts = [];
             if (showUsage) parts.push(`${item.usage}%`);
             if (showTemp) parts.push(`${item.temp}°C`);
 
-            let text = parts.join(' ');
-            ui.label.set_text(text);
-            ui.label.style = showTemp ? this._getTempStyle(item.temp, warn, crit) : '';
+            let text = parts.join(' | ');
+            ui.valueLabel.set_text(text);
+            
+            if (showTemp) {
+                ui.valueLabel.style = this._getTempStyle(item.temp, warn, crit);
+            } else {
+                ui.valueLabel.style = '';
+            }
 
-            // Toggle visibility in the panel
-            ui.box.visible = (showTemp || showUsage);
+            let fullWidth = 150;
+            let barBg = ui.barFill.get_parent();
+            if (barBg && barBg.width > 0) {
+                fullWidth = barBg.width;
+            }
+            
+            let targetWidth = (item.usage / 100) * fullWidth;
+            ui.barFill.width = targetWidth;
 
-            ui.menuLabel.label.set_text(`${item.displayName}: ${item.usage}% usage | ${item.temp}°C`);
+            ui.row.visible = (showTemp || showUsage);
         });
     }
 

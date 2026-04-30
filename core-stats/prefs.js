@@ -82,6 +82,28 @@ export default class CoreStatsPreferences extends ExtensionPreferences {
         critRow.add_suffix(critSpin);
         thresholdGroup.add(critRow);
 
+        // Position Group
+        const positionGroup = new Adw.PreferencesGroup({ title: 'Widget Position' });
+        page.add(positionGroup);
+
+        const xRow = new Adw.ActionRow({ title: 'X Coordinate' });
+        const xSpin = new Gtk.SpinButton({
+            adjustment: new Gtk.Adjustment({ lower: 0, upper: 5000, step_increment: 10 }),
+            valign: Gtk.Align.CENTER
+        });
+        settings.bind('widget-x', xSpin, 'value', Gio.SettingsBindFlags.DEFAULT);
+        xRow.add_suffix(xSpin);
+        positionGroup.add(xRow);
+
+        const yRow = new Adw.ActionRow({ title: 'Y Coordinate' });
+        const ySpin = new Gtk.SpinButton({
+            adjustment: new Gtk.Adjustment({ lower: 0, upper: 5000, step_increment: 10 }),
+            valign: Gtk.Align.CENTER
+        });
+        settings.bind('widget-y', ySpin, 'value', Gio.SettingsBindFlags.DEFAULT);
+        yRow.add_suffix(ySpin);
+        positionGroup.add(yRow);
+
         window.add(page);
     }
 }
