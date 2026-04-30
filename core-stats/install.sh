@@ -13,6 +13,7 @@ mkdir -p "$EXT_DIR"
 cp -r extension.js metadata.json stylesheet.css prefs.js "$EXT_DIR/"
 mkdir -p "$EXT_DIR/schemas"
 cp schemas/*.gschema.xml "$EXT_DIR/schemas/"
+cp -r icons "$EXT_DIR/"
 
 # Compile the schemas in the target directory
 glib-compile-schemas "$EXT_DIR/schemas/"

@@ -10,7 +10,7 @@ import { Extension, gettext as _ } from 'resource:///org/gnome/shell/extensions/
 const SENSOR_TYPES = {
     'cpu': {
         names: ['k10temp', 'coretemp'],
-        icon: 'processor-symbolic',
+        icon: 'cpu-chip-symbolic',
         label: 'CPU'
     },
     'gpu': {
@@ -150,7 +150,6 @@ export default class CoreStatsExtension extends Extension {
         let header = new St.Label({
             text: _('CORE STATS'),
             style_class: 'core-stats-header',
-            x_expand: true,
             x_align: Clutter.ActorAlign.CENTER
         });
         this._container.add_child(header);
@@ -161,10 +160,19 @@ export default class CoreStatsExtension extends Extension {
             let row = new St.BoxLayout({ style_class: 'core-stats-row', vertical: true });
             
             let infoBox = new St.BoxLayout({ style_class: 'core-stats-info' });
-            let icon = new St.Icon({ 
-                icon_name: item.icon, 
-                style_class: 'core-stats-icon' 
-            });
+            let icon;
+            if (item.icon === 'cpu-chip-symbolic') {
+                let iconFile = this.dir.get_child('icons').get_child('cpu-chip-symbolic.svg');
+                icon = new St.Icon({ 
+                    gicon: Gio.Icon.new_for_string(iconFile.get_path()), 
+                    style_class: 'core-stats-icon' 
+                });
+            } else {
+                icon = new St.Icon({ 
+                    icon_name: item.icon, 
+                    style_class: 'core-stats-icon' 
+                });
+            }
             let label = new St.Label({ 
                 text: item.displayName, 
                 style_class: 'core-stats-label',
