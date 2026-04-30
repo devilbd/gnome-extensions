@@ -205,13 +205,6 @@ export default class ClockExtension extends Extension {
         cr.paint();
         cr.setOperator(Cairo.Operator.OVER);
 
-        // ── Outer Neon Bloom (Multi-layered Glow) ─────────────────────────
-        for (let i = 1; i <= 3; i++) {
-            cr.arc(cx, cy, R + 2 + i * 2, 0, 2 * Math.PI);
-            cr.setSourceRGBA(0.0, 0.6, 1.0, 0.4 / i);
-            cr.setLineWidth(6 * i);
-            cr.stroke();
-        }
 
         // ── Dark Metallic Rim (Beveled Glass Edge) ────────────────────────
         let rimGrad = new Cairo.LinearGradient(cx - R, cy - R, cx + R, cy + R);
