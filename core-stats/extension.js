@@ -139,14 +139,14 @@ export default class CoreStatsExtension extends Extension {
         this._container = new St.BoxLayout({
             vertical: true,
             style_class: 'core-stats-container',
-            reactive: false,
+            reactive: true,
             can_focus: false,
-            track_hover: false
+            track_hover: true
         });
 
         // Header
         let header = new St.Label({
-            text: _('SYSTEM PERFORMANCE'),
+            text: _('CORE STATS'),
             style_class: 'core-stats-header'
         });
         this._container.add_child(header);
@@ -182,7 +182,8 @@ export default class CoreStatsExtension extends Extension {
             let barBg = new St.Bin({ style_class: 'core-stats-bar-bg', x_expand: true });
             let barFill = new St.Bin({ 
                 style_class: `core-stats-bar-fill core-stats-bar-${item.type}`,
-                width: 0 
+                width: 0,
+                x_align: Clutter.ActorAlign.START
             });
             barBg.set_child(barFill);
 
@@ -289,9 +290,17 @@ export default class CoreStatsExtension extends Extension {
             ui.valueLabel.set_text(text);
             
             if (showTemp) {
-                ui.valueLabel.style = this._getTempStyle(item.temp, warn, crit);
+                ui.valueLabel.remove_style_class_name('status-warning');
+                ui.valueLabel.remove_style_class_name('status-critical');
+                
+                if (item.temp >= crit) {
+                    ui.valueLabel.add_style_class_name('status-critical');
+                } else if (item.temp >= warn) {
+                    ui.valueLabel.add_style_class_name('status-warning');
+                }
             } else {
-                ui.valueLabel.style = '';
+                ui.valueLabel.remove_style_class_name('status-warning');
+                ui.valueLabel.remove_style_class_name('status-critical');
             }
 
             let fullWidth = 150;
@@ -308,8 +317,6 @@ export default class CoreStatsExtension extends Extension {
     }
 
     _getTempStyle(temp, warn, crit) {
-        if (temp >= crit) return 'color: #ff3333; font-weight: bold;';
-        if (temp >= warn) return 'color: #ffaa00;';
         return '';
     }
 }
