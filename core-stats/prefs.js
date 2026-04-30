@@ -1,5 +1,6 @@
 import Adw from 'gi://Adw';
 import Gio from 'gi://Gio';
+import Gtk from 'gi://Gtk';
 import { ExtensionPreferences } from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 
 export default class CoreStatsPreferences extends ExtensionPreferences {
@@ -11,9 +12,9 @@ export default class CoreStatsPreferences extends ExtensionPreferences {
 
         // Refresh Interval
         const refreshRow = new Adw.ActionRow({ title: 'Refresh Interval (seconds)' });
-        const refreshSpin = new Adw.SpinButton({
-            adjustment: new Adw.Adjustment({ lower: 1, upper: 60, step_increment: 1 }),
-            valign: 1 // Center
+        const refreshSpin = new Gtk.SpinButton({
+            adjustment: new Gtk.Adjustment({ lower: 1, upper: 60, step_increment: 1 }),
+            valign: Gtk.Align.CENTER
         });
         settings.bind('refresh-interval', refreshSpin, 'value', Gio.SettingsBindFlags.DEFAULT);
         refreshRow.add_suffix(refreshSpin);
@@ -34,18 +35,18 @@ export default class CoreStatsPreferences extends ExtensionPreferences {
         page.add(thresholdGroup);
 
         const warnRow = new Adw.ActionRow({ title: 'Warning Threshold (°C)' });
-        const warnSpin = new Adw.SpinButton({
-            adjustment: new Adw.Adjustment({ lower: 40, upper: 100, step_increment: 1 }),
-            valign: 1
+        const warnSpin = new Gtk.SpinButton({
+            adjustment: new Gtk.Adjustment({ lower: 40, upper: 100, step_increment: 1 }),
+            valign: Gtk.Align.CENTER
         });
         settings.bind('warning-threshold', warnSpin, 'value', Gio.SettingsBindFlags.DEFAULT);
         warnRow.add_suffix(warnSpin);
         thresholdGroup.add(warnRow);
 
         const critRow = new Adw.ActionRow({ title: 'Critical Threshold (°C)' });
-        const critSpin = new Adw.SpinButton({
-            adjustment: new Adw.Adjustment({ lower: 40, upper: 110, step_increment: 1 }),
-            valign: 1
+        const critSpin = new Gtk.SpinButton({
+            adjustment: new Gtk.Adjustment({ lower: 40, upper: 110, step_increment: 1 }),
+            valign: Gtk.Align.CENTER
         });
         settings.bind('critical-threshold', critSpin, 'value', Gio.SettingsBindFlags.DEFAULT);
         critRow.add_suffix(critSpin);
