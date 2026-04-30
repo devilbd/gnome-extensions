@@ -244,7 +244,7 @@ export default class CoreStatsExtension extends Extension {
             style_class: 'core-stats-container',
             reactive: true,
             can_focus: false,
-            track_hover: true
+            track_hover: false
         });
 
         // Header
