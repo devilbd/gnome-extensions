@@ -147,7 +147,8 @@ export default class CoreStatsExtension extends Extension {
         // Header
         let header = new St.Label({
             text: _('CORE STATS'),
-            style_class: 'core-stats-header'
+            style_class: 'core-stats-header',
+            x_align: Clutter.ActorAlign.CENTER
         });
         this._container.add_child(header);
 
