@@ -62,7 +62,7 @@ export default class CoreStatsExtension extends Extension {
                         this._settings.get_int('widget-y')
                     );
                 }
-            } else if (key === 'widget-width' || key === 'widget-max-width' || key === 'widget-max-height' || key === 'widget-orientation') {
+            } else if (key === 'widget-width' || key === 'widget-max-width' || key === 'widget-max-height' || key === 'widget-orientation' || key === 'show-scroll-buttons') {
                 this._buildUi();
             }
             this._updateDisplay();
@@ -247,15 +247,6 @@ export default class CoreStatsExtension extends Extension {
             track_hover: false
         });
 
-        // Header
-        let header = new St.Label({
-            text: _('CORE STATS'),
-            style_class: 'core-stats-header',
-            x_expand: true,
-            x_align: Clutter.ActorAlign.CENTER
-        });
-        header.clutter_text.ellipsize = Pango.EllipsizeMode.NONE;
-        this._container.add_child(header);
 
         let orientation = this._settings.get_int('widget-orientation');
         let isVertical = orientation === 0;
@@ -270,21 +261,25 @@ export default class CoreStatsExtension extends Extension {
         this._container.add_child(scrollLayout);
 
         // Prev Button
-        let prevButton = new St.Button({
-            style_class: 'core-stats-scroll-button',
-            reactive: true,
-            can_focus: true,
-            track_hover: true,
-            x_expand: isVertical,
-            y_expand: !isVertical,
-            x_align: Clutter.ActorAlign.FILL,
-            y_align: Clutter.ActorAlign.FILL,
-            child: new St.Icon({
-                icon_name: isVertical ? 'go-up-symbolic' : 'go-previous-symbolic',
-                style_class: 'core-stats-scroll-icon'
-            })
-        });
-        scrollLayout.add_child(prevButton);
+        let showButtons = this._settings.get_boolean('show-scroll-buttons');
+        let prevButton = null;
+        if (showButtons) {
+            prevButton = new St.Button({
+                style_class: `core-stats-scroll-button prev-button ${isVertical ? 'vertical' : 'horizontal'}`,
+                reactive: true,
+                can_focus: true,
+                track_hover: true,
+                x_expand: isVertical,
+                y_expand: !isVertical,
+                x_align: Clutter.ActorAlign.FILL,
+                y_align: Clutter.ActorAlign.FILL,
+                child: new St.Icon({
+                    icon_name: isVertical ? 'go-up-symbolic' : 'go-previous-symbolic',
+                    style_class: 'core-stats-scroll-icon'
+                })
+            });
+            scrollLayout.add_child(prevButton);
+        }
 
         let scrollView = new St.ScrollView({
             hscrollbar_policy: St.PolicyType.NEVER,
@@ -298,34 +293,41 @@ export default class CoreStatsExtension extends Extension {
         scrollLayout.add_child(scrollView);
 
         // Next Button
-        let nextButton = new St.Button({
-            style_class: 'core-stats-scroll-button',
-            reactive: true,
-            can_focus: true,
-            track_hover: true,
-            x_expand: isVertical,
-            y_expand: !isVertical,
-            x_align: Clutter.ActorAlign.FILL,
-            y_align: Clutter.ActorAlign.FILL,
-            child: new St.Icon({
-                icon_name: isVertical ? 'go-down-symbolic' : 'go-next-symbolic',
-                style_class: 'core-stats-scroll-icon'
-            })
-        });
-        scrollLayout.add_child(nextButton);
+        let nextButton = null;
+        if (showButtons) {
+            nextButton = new St.Button({
+                style_class: `core-stats-scroll-button next-button ${isVertical ? 'vertical' : 'horizontal'}`,
+                reactive: true,
+                can_focus: true,
+                track_hover: true,
+                x_expand: isVertical,
+                y_expand: !isVertical,
+                x_align: Clutter.ActorAlign.FILL,
+                y_align: Clutter.ActorAlign.FILL,
+                child: new St.Icon({
+                    icon_name: isVertical ? 'go-down-symbolic' : 'go-next-symbolic',
+                    style_class: 'core-stats-scroll-icon'
+                })
+            });
+            scrollLayout.add_child(nextButton);
+        }
 
         // Scrolling Logic
         const scrollStep = 100;
-        prevButton.connect('clicked', () => {
-            let adj = isVertical ? scrollView.vadjustment : scrollView.hadjustment;
-            let newValue = Math.max(adj.lower, adj.value - scrollStep);
-            adj.value = newValue;
-        });
-        nextButton.connect('clicked', () => {
-            let adj = isVertical ? scrollView.vadjustment : scrollView.hadjustment;
-            let newValue = Math.min(adj.upper - adj.page_size, adj.value + scrollStep);
-            adj.value = newValue;
-        });
+        if (prevButton) {
+            prevButton.connect('clicked', () => {
+                let adj = isVertical ? scrollView.vadjustment : scrollView.hadjustment;
+                let newValue = Math.max(adj.lower, adj.value - scrollStep);
+                adj.value = newValue;
+            });
+        }
+        if (nextButton) {
+            nextButton.connect('clicked', () => {
+                let adj = isVertical ? scrollView.vadjustment : scrollView.hadjustment;
+                let newValue = Math.min(adj.upper - adj.page_size, adj.value + scrollStep);
+                adj.value = newValue;
+            });
+        }
 
         let maxWidth = this._settings.get_int('widget-max-width');
         let maxHeight = this._settings.get_int('widget-max-height');

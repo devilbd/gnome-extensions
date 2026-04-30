@@ -141,6 +141,10 @@ export default class CoreStatsPreferences extends ExtensionPreferences {
         settings.bind('widget-max-height', maxHeightSpin, 'value', Gio.SettingsBindFlags.DEFAULT);
         maxHeightRow.add_suffix(maxHeightSpin);
         positionGroup.add(maxHeightRow);
+        
+        const scrollButtonsRow = new Adw.SwitchRow({ title: 'Show Scroll Buttons' });
+        settings.bind('show-scroll-buttons', scrollButtonsRow, 'active', Gio.SettingsBindFlags.DEFAULT);
+        positionGroup.add(scrollButtonsRow);
 
         window.add(page);
     }

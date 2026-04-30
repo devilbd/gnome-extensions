@@ -93,5 +93,9 @@
       <default>0</default>
       <summary>Widget size Y (0 for auto)</summary>
     </key>
+    <key name="show-scroll-buttons" type="b">
+      <default>true</default>
+      <summary>Show manual scroll buttons in the widget</summary>
+    </key>
   </schema>
 </schemalist>
