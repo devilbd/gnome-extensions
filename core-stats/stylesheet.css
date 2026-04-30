@@ -103,6 +103,18 @@
     box-shadow: 0 0 15px rgba(250, 112, 154, 0.5);
 }
 
+.core-stats-bar-network {
+    background-gradient-start: #6a11cb;
+    background-gradient-end: #2575fc;
+    box-shadow: 0 0 15px rgba(37, 117, 252, 0.5);
+}
+
+.core-stats-bar-drive {
+    background-gradient-start: #ff9a9e;
+    background-gradient-end: #fecfef;
+    box-shadow: 0 0 15px rgba(254, 207, 239, 0.5);
+}
+
 .core-stats-icon {
     icon-size: 22px;
     color: #ffffff;

@@ -28,6 +28,14 @@ const SENSOR_TYPES = {
         names: ['spd5118', 'jc42'],
         icon: 'memory-symbolic',
         label: 'RAM'
+    },
+    'network': {
+        icon: 'network-transmit-receive-symbolic',
+        label: 'Net'
+    },
+    'drive': {
+        icon: 'drive-harddisk-symbolic',
+        label: 'Disk'
     }
 };
 
@@ -146,6 +154,64 @@ export default class CoreStatsExtension extends Extension {
             } catch (e) {}
             i++;
         }
+
+        // Add Network
+        this._monitoredItems.push({
+            type: 'network',
+            displayName: 'Network',
+            icon: 'network-transmit-receive-symbolic',
+            usage: 0,
+            speedDown: 0,
+            speedUp: 0,
+            prevBytesRecv: 0,
+            prevBytesSent: 0,
+            prevTime: GLib.get_monotonic_time(),
+            temp: 0
+        });
+
+        // Add Drives
+        await this._initDrives();
+    }
+
+    async _initDrives() {
+        try {
+            let contents = await this._readFile('/proc/mounts');
+            if (!contents) return;
+            
+            let lines = contents.split('\n');
+            let seenMounts = new Set();
+            for (let line of lines) {
+                let parts = line.trim().split(/\s+/);
+                if (parts.length < 3) continue;
+                let dev = parts[0];
+                let mountPoint = parts[1];
+                let fsType = parts[2];
+
+                if (dev.startsWith('/dev/') && !seenMounts.has(mountPoint)) {
+                    if (fsType === 'tmpfs' || fsType === 'devtmpfs' || fsType === 'squashfs') continue;
+                    
+                    // Unescape octal sequences (like \040 for space)
+                    mountPoint = mountPoint.replace(/\\(\d{3})/g, (match, octal) => {
+                        return String.fromCharCode(parseInt(octal, 8));
+                    });
+
+                    seenMounts.add(mountPoint);
+                    let label = mountPoint === '/' ? 'Root' : mountPoint.split('/').pop();
+                    if (!label) label = mountPoint;
+
+                    this._monitoredItems.push({
+                        type: 'drive',
+                        displayName: `Disk (${label})`,
+                        mountPoint: mountPoint,
+                        icon: 'drive-harddisk-symbolic',
+                        usage: 0,
+                        temp: 0
+                    });
+                }
+            }
+        } catch (e) {
+            console.error(`CoreStats: Error initializing drives: ${e}`);
+        }
     }
 
     _buildUi() {
@@ -253,10 +319,15 @@ export default class CoreStatsExtension extends Extension {
     }
 
     async _readTemp(item) {
+        if (!item.path) return;
         try {
             let contents = await this._readFile(`${item.path}/temp1_input`);
+            if (!contents) return;
             let tempStr = contents.trim();
-            item.temp = Math.round(parseInt(tempStr) / 1000);
+            let val = parseInt(tempStr);
+            if (!isNaN(val)) {
+                item.temp = Math.round(val / 1000);
+            }
         } catch (e) {}
     }
 
@@ -317,6 +388,74 @@ export default class CoreStatsExtension extends Extension {
                     item.prevIoTime = ioTime;
                     item.prevTime = now;
                 }
+            } else if (item.type === 'network') {
+                let contents = await this._readFile('/proc/net/dev');
+                if (!contents) return;
+                
+                let lines = contents.split('\n');
+                let totalRecv = 0;
+                let totalSent = 0;
+                for (let line of lines) {
+                    if (line.includes(':')) {
+                        let parts = line.trim().split(/\s+/);
+                        if (parts.length < 10) continue;
+                        let iface = parts[0];
+                        if (iface === 'lo:') continue;
+                        
+                        let recv = parseInt(parts[1]);
+                        let sent = parseInt(parts[9]);
+                        if (!isNaN(recv)) totalRecv += recv;
+                        if (!isNaN(sent)) totalSent += sent;
+                    }
+                }
+
+                let now = GLib.get_monotonic_time();
+                if (item.prevTime !== undefined) {
+                    let diffTime = (now - item.prevTime) / 1000000; // seconds
+                    if (diffTime > 0) {
+                        item.speedDown = (totalRecv - item.prevBytesRecv) / diffTime / (1024 * 1024); // MB/s
+                        item.speedUp = (totalSent - item.prevBytesSent) / diffTime / (1024 * 1024); // MB/s
+                        // Bar shows combined speed, 100MB/s = 100%
+                        item.usage = Math.min(100, Math.round((item.speedDown + item.speedUp)));
+                    }
+                }
+                item.prevBytesRecv = totalRecv;
+                item.prevBytesSent = totalSent;
+                item.prevTime = now;
+            } else if (item.type === 'drive') {
+                try {
+                    let file = Gio.File.new_for_path(item.mountPoint);
+                    let info = await new Promise((resolve, reject) => {
+                        file.query_filesystem_info_async(
+                            'filesystem::size,filesystem::free,filesystem::used',
+                            GLib.PRIORITY_DEFAULT,
+                            null,
+                            (source, res) => {
+                                try {
+                                    resolve(source.query_filesystem_info_finish(res));
+                                } catch (e) {
+                                    reject(e);
+                                }
+                            }
+                        );
+                    });
+
+                    let total = BigInt(info.get_attribute_uint64('filesystem::size'));
+                    let free = BigInt(info.get_attribute_uint64('filesystem::free'));
+                    let used = BigInt(info.get_attribute_uint64('filesystem::used'));
+                    
+                    // Fallback: if used is 0, calculate it from size and free
+                    if (used === 0n && total > 0n) {
+                        used = total - free;
+                    }
+
+                    if (total > 0n) {
+                        item.usage = Number((100n * used) / total);
+                        item.freeStr = GLib.format_size(Number(free));
+                    }
+                } catch (e) {
+                    console.error(`CoreStats: Error reading usage for ${item.mountPoint}: ${e}`);
+                }
             }
         } catch (e) {}
     }
@@ -331,12 +470,32 @@ export default class CoreStatsExtension extends Extension {
             let ui = this._uiItems[index];
             if (!ui) return;
 
-            let showTemp = this._settings.get_boolean(`show-${item.type}-temp`);
-            let showUsage = this._settings.get_boolean(`show-${item.type}-usage`);
+            let showTemp = false;
+            let showUsage = true;
+
+            try {
+                showTemp = this._settings.get_boolean(`show-${item.type}-temp`);
+                showUsage = this._settings.get_boolean(`show-${item.type}-usage`);
+            } catch (e) {
+                // Settings might not exist yet for new types
+            }
 
             let parts = [];
-            if (showUsage) parts.push(`${item.usage}%`);
-            if (showTemp) parts.push(`${item.temp}°C`);
+            if (item.type === 'network') {
+                if (showUsage) {
+                    parts.push(`↓${item.speedDown.toFixed(1)} MB/s`);
+                    parts.push(`↑${item.speedUp.toFixed(1)} MB/s`);
+                }
+            } else if (item.type === 'drive') {
+                if (showUsage) {
+                    let text = `${item.usage}% full`;
+                    if (item.freeStr) text += ` (${item.freeStr} free)`;
+                    parts.push(text);
+                }
+            } else {
+                if (showUsage) parts.push(`${item.usage}%`);
+                if (showTemp) parts.push(`${item.temp}°C`);
+            }
 
             let text = parts.join(' | ');
             ui.valueLabel.set_text(text);

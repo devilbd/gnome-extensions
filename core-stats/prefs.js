@@ -60,6 +60,16 @@ export default class CoreStatsPreferences extends ExtensionPreferences {
         settings.bind('show-ram-usage', ramUsageRow, 'active', Gio.SettingsBindFlags.DEFAULT);
         visibilityGroup.add(ramUsageRow);
 
+        // Network Settings
+        const networkUsageRow = new Adw.SwitchRow({ title: 'Show Network Speed' });
+        settings.bind('show-network-usage', networkUsageRow, 'active', Gio.SettingsBindFlags.DEFAULT);
+        visibilityGroup.add(networkUsageRow);
+
+        // Drive Settings
+        const driveUsageRow = new Adw.SwitchRow({ title: 'Show Drive Fulfillment' });
+        settings.bind('show-drive-usage', driveUsageRow, 'active', Gio.SettingsBindFlags.DEFAULT);
+        visibilityGroup.add(driveUsageRow);
+
         // Thresholds Group
         const thresholdGroup = new Adw.PreferencesGroup({ title: 'Thresholds' });
         page.add(thresholdGroup);

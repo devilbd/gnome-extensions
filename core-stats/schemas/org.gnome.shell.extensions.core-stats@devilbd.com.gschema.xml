@@ -37,6 +37,22 @@
       <default>true</default>
       <summary>Show RAM temperature in the panel</summary>
     </key>
+    <key name="show-network-usage" type="b">
+      <default>true</default>
+      <summary>Show network speed in the panel</summary>
+    </key>
+    <key name="show-network-temp" type="b">
+      <default>false</default>
+      <summary>Show network temperature (placeholder)</summary>
+    </key>
+    <key name="show-drive-usage" type="b">
+      <default>true</default>
+      <summary>Show drive fulfillment in the panel</summary>
+    </key>
+    <key name="show-drive-temp" type="b">
+      <default>false</default>
+      <summary>Show drive temperature (placeholder)</summary>
+    </key>
     <key name="temp-unit" type="s">
       <default>'celsius'</default>
       <summary>Temperature unit (celsius or fahrenheit)</summary>
