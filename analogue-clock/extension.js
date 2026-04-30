@@ -79,8 +79,8 @@ export default class ClockExtension extends Extension {
                 return Clutter.EVENT_PROPAGATE;
             });
 
-            // Add to the window group at index 0 to stay behind all windows but above background
-            global.window_group.insert_child_at_index(this._clockWidget, 0);
+            // Add to the background group to stay on the desktop level
+            Main.layoutManager._backgroundGroup.add_child(this._clockWidget);
 
             // Update every second
             this._timeout = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 1, () => {
@@ -122,7 +122,8 @@ export default class ClockExtension extends Extension {
             if (this._repaintId) this._clockWidget.disconnect(this._repaintId);
             if (this._pressId)   this._clockWidget.disconnect(this._pressId);
             if (this._releaseId) this._clockWidget.disconnect(this._releaseId);
-            global.window_group.remove_child(this._clockWidget);
+            let parent = this._clockWidget.get_parent();
+            if (parent) parent.remove_child(this._clockWidget);
             this._clockWidget.destroy();
             this._clockWidget = null;
         }

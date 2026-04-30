@@ -5,7 +5,8 @@ EXT_DIR="$HOME/.local/share/gnome-shell/extensions/$UUID"
 
 echo "Installing extension $UUID..."
 
-# Create the extensions directory if it doesn't exist
+# Create the extensions directory (clean install)
+rm -rf "$EXT_DIR"
 mkdir -p "$EXT_DIR"
 
 # Copy all essential files to the target directory
