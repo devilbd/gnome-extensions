@@ -142,13 +142,6 @@ export default class CoreStatsPreferences extends ExtensionPreferences {
         maxHeightRow.add_suffix(maxHeightSpin);
         positionGroup.add(maxHeightRow);
         
-        const scrollButtonsRow = new Adw.SwitchRow({ title: 'Show Scroll Buttons' });
-        settings.bind('show-scroll-buttons', scrollButtonsRow, 'active', Gio.SettingsBindFlags.DEFAULT);
-        positionGroup.add(scrollButtonsRow);
-
-        const enableScrollingRow = new Adw.SwitchRow({ title: 'Enable Mouse Scrolling' });
-        settings.bind('enable-scrolling', enableScrollingRow, 'active', Gio.SettingsBindFlags.DEFAULT);
-        positionGroup.add(enableScrollingRow);
 
         window.add(page);
     }

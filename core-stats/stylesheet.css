@@ -29,41 +29,6 @@
     padding: 20px;
 }
 
-.core-stats-scrollview {
-    /* Ensure the scrollview can shrink to trigger scrollbars */
-    -st-vscroll-bar-width: 8px;
-    -st-hscroll-bar-height: 8px;
-    min-width: 100px;
-    min-height: 50px;
-}
-
-.has-max-width {
-    /* These are mostly handled by inline styles now, but we ensure layout integrity */
-    overflow: hidden;
-}
-
-.has-max-height {
-    overflow: hidden;
-}
-
-.core-stats-scrollview StScrollBar {
-    background-color: transparent;
-}
-
-.core-stats-scrollview StScrollBar StButton#vhandle,
-.core-stats-scrollview StScrollBar StButton#hhandle {
-    background-color: rgba(255, 255, 255, 0.25);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 4px;
-    margin: 2px;
-}
-
-.core-stats-scrollview StScrollBar StButton#vhandle:hover,
-.core-stats-scrollview StScrollBar StButton#hhandle:hover {
-    background-color: rgba(255, 255, 255, 0.45);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-}
-
 .core-stats-info {
     spacing: 16px;
 }
@@ -144,52 +109,6 @@
     background-gradient-start: #ff9a9e;
     background-gradient-end: #fecfef;
     box-shadow: 0 0 15px rgba(254, 207, 239, 0.5);
-}
-
-.core-stats-scroll-button {
-    background-color: rgba(255, 255, 255, 0.05);
-    border: none;
-    border-radius: 0;
-    padding: 8px;
-    transition-duration: 200ms;
-    margin: 0;
-    min-width: 32px;
-    min-height: 32px;
-}
-
-.core-stats-scroll-button:hover {
-    background-color: rgba(255, 255, 255, 0.15);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-}
-
-.core-stats-scroll-button.horizontal.prev-button {
-    border-radius: 24px 0 0 24px;
-}
-
-.core-stats-scroll-button.horizontal.next-button {
-    border-radius: 0 24px 24px 0;
-}
-
-.core-stats-scroll-button.vertical.prev-button {
-    border-radius: 24px 24px 0 0;
-}
-
-.core-stats-scroll-button.vertical.next-button {
-    border-radius: 0 0 24px 24px;
-}
-
-.core-stats-scroll-button:active {
-    background-color: rgba(255, 255, 255, 0.25);
-    transform: scale(0.95);
-}
-
-.core-stats-scroll-icon {
-    icon-size: 20px;
-    color: rgba(255, 255, 255, 0.8);
-}
-
-.core-stats-scroll-button:hover .core-stats-scroll-icon {
-    color: #ffffff;
 }
 
 .core-stats-icon {

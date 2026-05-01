@@ -62,7 +62,7 @@ export default class CoreStatsExtension extends Extension {
                         this._settings.get_int('widget-y')
                     );
                 }
-            } else if (key === 'widget-width' || key === 'widget-max-width' || key === 'widget-max-height' || key === 'widget-orientation' || key === 'show-scroll-buttons' || key === 'enable-scrolling') {
+            } else if (key === 'widget-width' || key === 'widget-max-width' || key === 'widget-max-height' || key === 'widget-orientation') {
                 this._buildUi();
             }
             this._updateDisplay();
@@ -266,104 +266,11 @@ export default class CoreStatsExtension extends Extension {
         if (maxWidth <= 0) maxWidth = this._settings.get_int('widget-width');
         if (maxWidth <= 0) maxWidth = 280; // Absolute fallback
 
-        // Container for scroll buttons and scrollview
-        let scrollLayout = new St.BoxLayout({
-            vertical: isVertical,
-            x_expand: true,
-            y_expand: true,
-            reactive: true
-        });
-        this._container.add_child(scrollLayout);
-
-        // Prev Button
-        let showButtons = this._settings.get_boolean('show-scroll-buttons');
-        let prevButton = null;
-        if (showButtons) {
-            prevButton = new St.Button({
-                style_class: `core-stats-scroll-button prev-button ${isVertical ? 'vertical' : 'horizontal'}`,
-                reactive: true,
-                can_focus: true,
-                track_hover: true,
-                x_expand: isVertical && maxWidth > 0,
-                y_expand: !isVertical && maxHeight > 0,
-                x_align: Clutter.ActorAlign.FILL,
-                y_align: Clutter.ActorAlign.FILL,
-                child: new St.Icon({
-                    icon_name: isVertical ? 'go-up-symbolic' : 'go-previous-symbolic',
-                    style_class: 'core-stats-scroll-icon'
-                })
-            });
-            scrollLayout.add_child(prevButton);
-        }
-
-        // Subcontainer for scroller and title
-        let scrollerSubcontainer = new St.BoxLayout({
-            vertical: true,
-            x_expand: true,
-            y_expand: true,
-            x_align: Clutter.ActorAlign.FILL,
-            y_align: Clutter.ActorAlign.FILL,
-            reactive: true
-        });
-        scrollLayout.add_child(scrollerSubcontainer);
-
-        let enableScrolling = this._settings.get_boolean('enable-scrolling');
-        let scrollView = new St.ScrollView({
-            hscrollbar_policy: enableScrolling ? St.PolicyType.AUTOMATIC : St.PolicyType.NEVER,
-            vscrollbar_policy: enableScrolling ? St.PolicyType.AUTOMATIC : St.PolicyType.NEVER,
-            style_class: 'core-stats-scrollview',
-            x_expand: true,
-            y_expand: true,
-            x_align: Clutter.ActorAlign.FILL,
-            y_align: Clutter.ActorAlign.FILL,
-            reactive: true,
-            enable_mouse_scrolling: enableScrolling
-        });
-        scrollerSubcontainer.add_child(scrollView);
-
-        // Next Button
-        let nextButton = null;
-        if (showButtons) {
-            nextButton = new St.Button({
-                style_class: `core-stats-scroll-button next-button ${isVertical ? 'vertical' : 'horizontal'}`,
-                reactive: true,
-                can_focus: true,
-                track_hover: true,
-                x_expand: isVertical && maxWidth > 0,
-                y_expand: !isVertical && maxHeight > 0,
-                x_align: Clutter.ActorAlign.FILL,
-                y_align: Clutter.ActorAlign.FILL,
-                child: new St.Icon({
-                    icon_name: isVertical ? 'go-down-symbolic' : 'go-next-symbolic',
-                    style_class: 'core-stats-scroll-icon'
-                })
-            });
-            scrollLayout.add_child(nextButton);
-        }
-
-        // Scrolling Logic
-        const scrollStep = 100;
-        if (prevButton) {
-            prevButton.connect('clicked', () => {
-                let adj = isVertical ? scrollView.vadjustment : scrollView.hadjustment;
-                let newValue = Math.max(adj.lower, adj.value - scrollStep);
-                adj.value = newValue;
-            });
-        }
-        if (nextButton) {
-            nextButton.connect('clicked', () => {
-                let adj = isVertical ? scrollView.vadjustment : scrollView.hadjustment;
-                let newValue = Math.min(adj.upper - adj.page_size, adj.value + scrollStep);
-                adj.value = newValue;
-            });
-        }
-        
         let containerStyle = '';
 
         if (maxWidth > 0) {
             containerStyle += `width: ${maxWidth}px; `;
             this._container.set_width(maxWidth);
-            this._container.add_style_class_name('has-max-width');
         } else {
             this._container.set_width(-1);
         }
@@ -371,7 +278,6 @@ export default class CoreStatsExtension extends Extension {
         if (maxHeight > 0) {
             containerStyle += `height: ${maxHeight}px; `;
             this._container.set_height(maxHeight);
-            this._container.add_style_class_name('has-max-height');
         } else {
             this._container.set_height(-1);
         }
@@ -385,7 +291,7 @@ export default class CoreStatsExtension extends Extension {
             y_expand: true,
             reactive: true
         });
-        scrollView.set_child(contentBox);
+        this._container.add_child(contentBox);
 
         this._uiItems = [];
 
@@ -462,23 +368,27 @@ export default class CoreStatsExtension extends Extension {
         footerLabel.clutter_text.ellipsize = Pango.EllipsizeMode.NONE;
         footerLabel.clutter_text.x_align = Clutter.ActorAlign.END;
         footer.add_child(footerLabel);
-        scrollerSubcontainer.add_child(footer);
+        this._container.add_child(footer);
 
-        // Add to the UI group and position it correctly.
-        Main.uiGroup.add_child(this._container);
-        
+        // Add to the background group so it stays behind all application windows.
+        // The background group is inherently below the window group in the compositor.
+        // Place it at the top of the background group so it renders above the wallpaper.
         try {
-            let windowGroup = Main.layoutManager.windowGroup;
-            if (windowGroup && windowGroup.get_parent() === Main.uiGroup) {
-                Main.uiGroup.set_child_below_sibling(this._container, windowGroup);
+            let bgGroup = Main.layoutManager._backgroundGroup;
+            if (bgGroup) {
+                bgGroup.add_child(this._container);
+                bgGroup.set_child_above_sibling(this._container, null);
             } else {
-                // If we can't find the window group or it's not where we expect,
-                // place it on top to ensure it's at least visible.
-                Main.uiGroup.set_child_above_sibling(this._container, null);
+                // Fallback: add to uiGroup but below the window group
+                Main.uiGroup.add_child(this._container);
+                let windowGroup = Main.layoutManager.windowGroup;
+                if (windowGroup) {
+                    Main.uiGroup.set_child_below_sibling(this._container, windowGroup);
+                }
             }
         } catch (e) {
             console.warn('CoreStats: Could not set z-order:', e);
-            // Fallback: stay on top
+            Main.uiGroup.add_child(this._container);
         }
 
         // Position it from settings
