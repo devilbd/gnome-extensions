@@ -14,6 +14,6 @@ glib-compile-schemas schemas/
 # Pack the extension
 # --force overwrites the existing zip
 # --out-dir specifies where to save the zip
-gnome-extensions pack --force --out-dir="$OUTPUT_DIR"
+gnome-extensions pack --force --extra-source=prefs.ui --out-dir="$OUTPUT_DIR"
 
 echo "Extension packaged successfully: $OUTPUT_DIR/$UUID.shell-extension.zip"
