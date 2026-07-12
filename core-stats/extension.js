@@ -4,9 +4,7 @@ import GLib from 'gi://GLib';
 import Gio from 'gi://Gio';
 import Pango from 'gi://Pango';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
-import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
-import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
-import { Extension, gettext as _ } from 'resource:///org/gnome/shell/extensions/extension.js';
+import { Extension } from 'resource:///org/gnome/shell/extensions/extension.js';
 
 const SENSOR_TYPES = {
     'cpu': {
@@ -69,8 +67,9 @@ export default class CoreStatsExtension extends Extension {
         });
 
         // Use a small timeout to ensure Shell is ready before final UI build
-        GLib.timeout_add(GLib.PRIORITY_DEFAULT, 100, () => {
-            this._initAsync().catch(e => logError(e, 'CoreStats'));
+        this._initTimeoutId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 100, () => {
+            this._initAsync().catch(e => console.error('CoreStats init error:', e));
+            this._initTimeoutId = null;
             return GLib.SOURCE_REMOVE;
         });
     }
@@ -94,12 +93,16 @@ export default class CoreStatsExtension extends Extension {
         this._updateId = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 
             interval, 
             () => {
-                this._updateStats().catch(e => logError(e, 'CoreStats'));
+                this._updateStats().catch(e => console.error('CoreStats update stats error:', e));
                 return GLib.SOURCE_CONTINUE;
             });
     }
 
     disable() {
+        if (this._initTimeoutId) {
+            GLib.source_remove(this._initTimeoutId);
+            this._initTimeoutId = null;
+        }
         if (this._updateId) {
             GLib.source_remove(this._updateId);
             this._updateId = null;
@@ -170,12 +173,16 @@ export default class CoreStatsExtension extends Extension {
                             if (!GLib.file_test(item.blockPath, GLib.FileTest.EXISTS)) {
                                 item.blockPath = null;
                             }
-                        } catch (e) {}
+                        } catch (e) {
+                            console.debug('CoreStats: Error reading nvme block path:', e);
+                        }
                     }
 
                     this._monitoredItems.push(item);
                 }
-            } catch (e) {}
+            } catch (e) {
+                console.debug(`CoreStats: Error initializing sensor ${path}:`, e);
+            }
             i++;
         }
 
@@ -234,7 +241,7 @@ export default class CoreStatsExtension extends Extension {
                 }
             }
         } catch (e) {
-            logError(e, 'CoreStats: Error initializing drives');
+            console.error('CoreStats: Error initializing drives:', e);
         }
     }
 
@@ -409,7 +416,7 @@ export default class CoreStatsExtension extends Extension {
                 await this._readUsage(item);
             }));
         } catch (e) {
-            logError(e, 'CoreStats: Error updating stats');
+            console.error('CoreStats: Error updating stats:', e);
         }
 
         this._updateDisplay();
@@ -425,7 +432,9 @@ export default class CoreStatsExtension extends Extension {
             if (!isNaN(val)) {
                 item.temp = Math.round(val / 1000);
             }
-        } catch (e) {}
+        } catch (e) {
+            console.debug(`CoreStats: Error reading temp for ${item.path}:`, e);
+        }
     }
 
     async _readUsage(item) {
@@ -551,10 +560,12 @@ export default class CoreStatsExtension extends Extension {
                         item.freeStr = GLib.format_size(Number(free));
                     }
                 } catch (e) {
-                    logError(e, `CoreStats: Error reading usage for ${item.mountPoint}`);
+                    console.error(`CoreStats: Error reading usage for ${item.mountPoint}:`, e);
                 }
             }
-        } catch (e) {}
+        } catch (e) {
+            console.debug(`CoreStats: Error reading usage for ${item.type}:`, e);
+        }
     }
 
     _updateDisplay() {
@@ -574,7 +585,7 @@ export default class CoreStatsExtension extends Extension {
                 showTemp = this._settings.get_boolean(`show-${item.type}-temp`);
                 showUsage = this._settings.get_boolean(`show-${item.type}-usage`);
             } catch (e) {
-                // Settings might not exist yet for new types
+                console.debug(`CoreStats: Settings might not exist yet for ${item.type}`, e);
             }
 
             let parts = [];
@@ -626,10 +637,6 @@ export default class CoreStatsExtension extends Extension {
         });
     }
 
-    _getTempStyle(temp, warn, crit) {
-        return '';
-    }
-
     async _readFile(path) {
         try {
             let file = Gio.File.new_for_path(path);
@@ -656,7 +663,7 @@ export default class CoreStatsExtension extends Extension {
                 });
             });
         } catch (e) {
-            logError(e, `CoreStats: Failed to read file ${path}`);
+            console.error(`CoreStats: Failed to read file ${path}:`, e);
             return "";
         }
     }
