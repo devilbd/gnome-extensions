@@ -7,20 +7,41 @@
     <property name="icon-name">preferences-system-symbolic</property>
     <child>
       <object class="AdwPreferencesGroup">
-        <property name="title">Appearance</property>
-        <property name="description">Customize how your desktop clock looks</property>
+        <property name="title">Placement</property>
         <child>
-          <object class="AdwActionRow">
-            <property name="title">Show Numbers</property>
-            <property name="subtitle">Display 12, 3, 6, and 9 on the face</property>
-            <child>
-              <object class="GtkSwitch" id="show_numbers_switch">
-                <property name="valign">center</property>
-                <property name="active">true</property>
+          <object class="AdwComboRow" id="monitor_combo">
+            <property name="title">Display Monitor</property>
+            <property name="subtitle">Choose which screen displays the clock</property>
+            <property name="model">
+              <object class="GtkStringList" id="monitor_string_list">
+                <items>
+                  <item translatable="yes">Primary Monitor</item>
+                </items>
               </object>
-            </child>
+            </property>
           </object>
         </child>
+        <child>
+          <object class="AdwComboRow" id="position_combo">
+            <property name="title">Position</property>
+            <property name="subtitle">Choose which corner the clock is placed in</property>
+            <property name="model">
+              <object class="GtkStringList">
+                <items>
+                  <item translatable="yes">Top Left</item>
+                  <item translatable="yes">Top Right</item>
+                  <item translatable="yes">Bottom Left</item>
+                  <item translatable="yes">Bottom Right</item>
+                </items>
+              </object>
+            </property>
+          </object>
+        </child>
+      </object>
+    </child>
+    <child>
+      <object class="AdwPreferencesGroup">
+        <property name="title">Appearance</property>
         <child>
           <object class="AdwActionRow">
             <property name="title">Clock Size</property>
@@ -40,37 +61,16 @@
             </child>
           </object>
         </child>
-      </object>
-    </child>
-    <child>
-      <object class="AdwPreferencesGroup">
-        <property name="title">Behavior</property>
         <child>
           <object class="AdwActionRow">
-            <property name="title">Enable Blur Effect</property>
-            <property name="subtitle">Adds a frosted glass effect behind the clock</property>
+            <property name="title">Show Numbers</property>
+            <property name="subtitle">Display 12, 3, 6, and 9 on the face</property>
             <child>
-              <object class="GtkSwitch" id="blur_switch">
+              <object class="GtkSwitch" id="show_numbers_switch">
                 <property name="valign">center</property>
-                <property name="active">false</property>
+                <property name="active">true</property>
               </object>
             </child>
-          </object>
-        </child>
-        <child>
-          <object class="AdwComboRow" id="position_combo">
-            <property name="title">Widget Position</property>
-            <property name="subtitle">Choose which corner the clock snaps to</property>
-            <property name="model">
-              <object class="GtkStringList">
-                <items>
-                  <item translatable="yes">Top Left</item>
-                  <item translatable="yes">Top Right</item>
-                  <item translatable="yes">Bottom Left</item>
-                  <item translatable="yes">Bottom Right</item>
-                </items>
-              </object>
-            </property>
           </object>
         </child>
       </object>

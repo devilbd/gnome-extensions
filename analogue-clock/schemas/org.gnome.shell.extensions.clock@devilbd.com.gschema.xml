@@ -9,13 +9,13 @@
       <default>280</default>
       <summary>The size of the clock widget</summary>
     </key>
-    <key name="enable-blur" type="b">
-      <default>false</default>
-      <summary>Enable blur effect behind the clock</summary>
-    </key>
     <key name="widget-position" type="i">
       <default>0</default>
       <summary>The corner where the clock widget is positioned (0: top-left, 1: top-right, 2: bottom-left, 3: bottom-right)</summary>
+    </key>
+    <key name="monitor-index" type="i">
+      <default>0</default>
+      <summary>The monitor to display the clock on (0: Primary Monitor, 1: Monitor 1, 2: Monitor 2, etc.)</summary>
     </key>
   </schema>
 </schemalist>

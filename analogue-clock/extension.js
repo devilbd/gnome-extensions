@@ -6,7 +6,6 @@ import Pango from 'gi://Pango';
 import PangoCairo from 'gi://PangoCairo';
 import { Extension } from 'resource:///org/gnome/shell/extensions/extension.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
-import Shell from 'gi://Shell';
 import Gio from 'gi://Gio';
 
 export default class ClockExtension extends Extension {
@@ -17,11 +16,11 @@ export default class ClockExtension extends Extension {
             this._showNumbers = this._settings.get_boolean('show-numbers');
             console.log(`[ClockExtension] Enabled: size=${this._size}, showNumbers=${this._showNumbers}`);
 
-            // St.DrawingArea for Cairo drawing — reactive so it can receive events
+            // St.DrawingArea for Cairo drawing — reactive: false so clicks pass through to desktop
             this._clockWidget = new St.DrawingArea({
                 width: this._size,
                 height: this._size,
-                reactive: true,   // must be true for drag
+                reactive: false,
             });
 
             // Listen for settings changes
@@ -33,56 +32,27 @@ export default class ClockExtension extends Extension {
                     this._updatePosition();
                 } else if (key === 'show-numbers') {
                     this._showNumbers = settings.get_boolean('show-numbers');
-                } else if (key === 'enable-blur') {
-                    this._updateBlur();
-                } else if (key === 'widget-position') {
+                } else if (key === 'widget-position' || key === 'monitor-index') {
                     this._updatePosition();
                 }
                 this._clockWidget.queue_repaint();
             });
 
-            this._updateBlur();
+            // Repaint connection
             this._repaintId = this._clockWidget.connect('repaint', this._drawClock.bind(this));
+
+            // Re-calculate position whenever monitors layout changes
+            this._monitorsChangedId = Main.layoutManager.connect('monitors-changed', () => {
+                this._updatePosition();
+            });
 
             // Initial position
             this._updatePosition();
 
-            // ----- Drag support -----
-            this._dragging    = false;
-            this._dragOffsetX = 0;
-            this._dragOffsetY = 0;
-
-            this._pressId = this._clockWidget.connect('button-press-event', (actor, event) => {
-                this._dragging = true;
-                let [ex, ey] = event.get_coords();
-                let [ax, ay] = actor.get_position();
-                this._dragOffsetX = ex - ax;
-                this._dragOffsetY = ey - ay;
-                return Clutter.EVENT_STOP;
-            });
-
-            this._releaseId = this._clockWidget.connect('button-release-event', () => {
-                this._dragging = false;
-                return Clutter.EVENT_STOP;
-            });
-
-            // motion events come from the stage while button is held
-            this._motionId = global.stage.connect('captured-event', (stage, event) => {
-                if (!this._dragging) return Clutter.EVENT_PROPAGATE;
-                if (event.type() === Clutter.EventType.MOTION) {
-                    let [ex, ey] = event.get_coords();
-                    this._posX = Math.round(ex - this._dragOffsetX);
-                    this._posY = Math.round(ey - this._dragOffsetY);
-                    this._clockWidget.set_position(this._posX, this._posY);
-                    return Clutter.EVENT_STOP;
-                }
-                return Clutter.EVENT_PROPAGATE;
-            });
-
             // Add to the background group to stay on the desktop level
             Main.layoutManager._backgroundGroup.add_child(this._clockWidget);
 
-            // Update every second
+            // Repaint timer (1-second tick)
             this._timeout = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 1, () => {
                 this._clockWidget.queue_repaint();
                 return GLib.SOURCE_CONTINUE;
@@ -107,21 +77,19 @@ export default class ClockExtension extends Extension {
             this._timeout = null;
         }
 
+        if (this._monitorsChangedId) {
+            Main.layoutManager.disconnect(this._monitorsChangedId);
+            this._monitorsChangedId = null;
+        }
+
         if (this._settingsId) {
             this._settings.disconnect(this._settingsId);
             this._settingsId = null;
         }
         this._settings = null;
 
-        if (this._motionId) {
-            global.stage.disconnect(this._motionId);
-            this._motionId = null;
-        }
-
         if (this._clockWidget) {
             if (this._repaintId) this._clockWidget.disconnect(this._repaintId);
-            if (this._pressId)   this._clockWidget.disconnect(this._pressId);
-            if (this._releaseId) this._clockWidget.disconnect(this._releaseId);
             let parent = this._clockWidget.get_parent();
             if (parent) parent.remove_child(this._clockWidget);
             this._clockWidget.destroy();
@@ -129,58 +97,44 @@ export default class ClockExtension extends Extension {
         }
     }
 
-    _updateBlur() {
-        if (!this._clockWidget) return;
-
-        let enabled = this._settings.get_boolean('enable-blur');
-        if (enabled) {
-            if (!this._blurEffect) {
-                // Shell.BlurEffect is usually available in extensions
-                try {
-                    this._blurEffect = new Shell.BlurEffect({
-                        brightness: 0.6,
-                        radius: 60,
-                        mode: Shell.BlurMode.BACKGROUND
-                    });
-                    this._clockWidget.add_effect(this._blurEffect);
-                } catch (e) {
-                    console.error('Failed to add blur effect: ' + e.message);
-                }
-            }
-        } else {
-            if (this._blurEffect) {
-                this._clockWidget.remove_effect(this._blurEffect);
-                this._blurEffect = null;
-            }
+    _getTargetMonitor() {
+        const monitorIndex = this._settings ? this._settings.get_int('monitor-index') : 0;
+        const monitors = Main.layoutManager.monitors;
+        // 0: Primary Monitor; 1..n: monitors[0..n-1]
+        if (monitorIndex > 0 && monitors && (monitorIndex - 1) < monitors.length) {
+            return monitors[monitorIndex - 1];
         }
+        return Main.layoutManager.primaryMonitor;
     }
 
     _updatePosition() {
         if (!this._clockWidget) return;
 
-        const position = this._settings.get_int('widget-position');
-        const monitor = Main.layoutManager.primaryMonitor;
+        const position = this._settings ? this._settings.get_int('widget-position') : 0;
+        const monitor = this._getTargetMonitor();
+        if (!monitor) return;
+
         const margin = 40;
-        const bottomMargin = 80; // Extra margin for the panel if it's at the bottom
+        const bottomMargin = 80;
 
         // 0: top-left, 1: top-right, 2: bottom-left, 3: bottom-right
         switch (position) {
             case 0: // Top Left
-                this._posX = margin;
-                this._posY = margin;
+                this._posX = monitor.x + margin;
+                this._posY = monitor.y + margin;
                 break;
             case 1: // Top Right
-                this._posX = monitor.width - this._size - margin;
-                this._posY = margin;
+                this._posX = monitor.x + monitor.width - this._size - margin;
+                this._posY = monitor.y + margin;
                 break;
             case 2: // Bottom Left
-                this._posX = margin;
-                this._posY = monitor.height - this._size - bottomMargin;
+                this._posX = monitor.x + margin;
+                this._posY = monitor.y + monitor.height - this._size - bottomMargin;
                 break;
             case 3: // Bottom Right
             default:
-                this._posX = monitor.width - this._size - margin;
-                this._posY = monitor.height - this._size - bottomMargin;
+                this._posX = monitor.x + monitor.width - this._size - margin;
+                this._posY = monitor.y + monitor.height - this._size - bottomMargin;
                 break;
         }
 
@@ -205,7 +159,6 @@ export default class ClockExtension extends Extension {
         cr.paint();
         cr.setOperator(Cairo.Operator.OVER);
 
-
         // ── Dark Metallic Rim (Beveled Glass Edge) ────────────────────────
         let rimGrad = new Cairo.LinearGradient(cx - R, cy - R, cx + R, cy + R);
         rimGrad.addColorStopRGBA(0,   0.15, 0.15, 0.18, 1.0); // Dark top
@@ -219,13 +172,11 @@ export default class ClockExtension extends Extension {
         cr.stroke();
 
         // ── Deep Dark Glass Face ──────────────────────────────────────────
-        // Subtle radial gradient for depth
         let faceGrad = new Cairo.RadialGradient(cx, cy - R * 0.2, R * 0.1,
                                                  cx, cy, R);
-        // Changed alpha values from 1.0 to semi-transparent to allow the blur to show through
-        faceGrad.addColorStopRGBA(0,   0.08, 0.09, 0.12, 0.25); // Lighter center-top
-        faceGrad.addColorStopRGBA(0.8, 0.03, 0.03, 0.05, 0.4);  // Deep charcoal
-        faceGrad.addColorStopRGBA(1,   0.01, 0.01, 0.02, 0.5);  // Near black edges
+        faceGrad.addColorStopRGBA(0,   0.08, 0.09, 0.12, 0.92); // Lighter center-top
+        faceGrad.addColorStopRGBA(0.8, 0.03, 0.03, 0.05, 0.96); // Deep charcoal
+        faceGrad.addColorStopRGBA(1,   0.01, 0.01, 0.02, 0.98); // Near black edges
         
         cr.arc(cx, cy, R, 0, 2 * Math.PI);
         cr.setSource(faceGrad);
@@ -439,5 +390,4 @@ export default class ClockExtension extends Extension {
 
         cr.restore();
     }
-
 }
