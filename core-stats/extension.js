@@ -95,7 +95,7 @@ export default class CoreStatsExtension extends Extension {
         this._updateId = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 
             interval, 
             () => {
-                this._updateStats().catch(e => console.error('CoreStats update stats error:', e));
+                this._updateStats().catch(e => console.debug('CoreStats update stats error:', e));
                 return GLib.SOURCE_CONTINUE;
             });
     }
@@ -123,7 +123,6 @@ export default class CoreStatsExtension extends Extension {
             this._container.destroy();
             this._container = null;
         }
-        this._scrollView = null;
         this._uiItems = [];
         this._settings = null;
         this._monitoredItems = [];
@@ -263,7 +262,7 @@ export default class CoreStatsExtension extends Extension {
                 }
             }
         } catch (e) {
-            console.error('CoreStats: Error initializing drives:', e);
+            console.debug('CoreStats: Error initializing drives:', e);
         }
     }
 
@@ -326,7 +325,7 @@ export default class CoreStatsExtension extends Extension {
 
         if (containerStyle) this._container.style = containerStyle;
 
-        this._scrollView = new St.ScrollView({
+        let scrollView = new St.ScrollView({
             style_class: 'core-stats-scrollview',
             hscrollbar_policy: isVertical ? St.PolicyType.NEVER : (width > 0 ? St.PolicyType.AUTOMATIC : St.PolicyType.NEVER),
             vscrollbar_policy: isVertical ? (height > 0 ? St.PolicyType.AUTOMATIC : St.PolicyType.NEVER) : St.PolicyType.NEVER,
@@ -343,8 +342,8 @@ export default class CoreStatsExtension extends Extension {
             x_expand: true,
             y_expand: true
         });
-        this._scrollView.set_child(contentBox);
-        this._container.add_child(this._scrollView);
+        scrollView.set_child(contentBox);
+        this._container.add_child(scrollView);
 
         this._uiItems = [];
 
@@ -449,7 +448,7 @@ export default class CoreStatsExtension extends Extension {
                 }
             }
         } catch (e) {
-            console.warn('CoreStats: Could not set z-order:', e);
+            console.debug('CoreStats: Could not set z-order:', e);
             Main.uiGroup.add_child(this._container);
         }
 
@@ -504,7 +503,7 @@ export default class CoreStatsExtension extends Extension {
                 await this._readUsage(item);
             }));
         } catch (e) {
-            console.error('CoreStats: Error updating stats:', e);
+            console.debug('CoreStats: Error updating stats:', e);
         }
 
         this._updateDisplay();
@@ -648,7 +647,7 @@ export default class CoreStatsExtension extends Extension {
                         item.freeStr = GLib.format_size(Number(free));
                     }
                 } catch (e) {
-                    console.error(`CoreStats: Error reading usage for ${item.mountPoint}:`, e);
+                    console.debug(`CoreStats: Error reading usage for ${item.mountPoint}:`, e);
                 }
             }
         } catch (e) {
@@ -759,7 +758,7 @@ export default class CoreStatsExtension extends Extension {
                 });
             });
         } catch (e) {
-            console.error(`CoreStats: Failed to read file ${path}:`, e);
+            console.debug(`CoreStats: Failed to read file ${path}:`, e);
             return "";
         }
     }
