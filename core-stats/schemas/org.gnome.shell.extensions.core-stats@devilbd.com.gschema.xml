@@ -69,6 +69,10 @@
       <default>95</default>
       <summary>Temperature critical threshold in Celsius</summary>
     </key>
+    <key name="widget-monitor" type="i">
+      <default>0</default>
+      <summary>Monitor index to display widget (0: Primary, 1: Monitor 1, 2: Monitor 2, etc.)</summary>
+    </key>
     <key name="widget-x" type="i">
       <default>20</default>
       <summary>Widget X coordinate</summary>
@@ -79,7 +83,11 @@
     </key>
     <key name="widget-width" type="i">
       <default>280</default>
-      <summary>Widget width</summary>
+      <summary>Widget width (0 for auto)</summary>
+    </key>
+    <key name="widget-height" type="i">
+      <default>0</default>
+      <summary>Widget height (0 for auto)</summary>
     </key>
     <key name="widget-orientation" type="i">
       <default>0</default>

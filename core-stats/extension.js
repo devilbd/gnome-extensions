@@ -53,18 +53,20 @@ export default class CoreStatsExtension extends Extension {
         this._settingsId = this._settings.connect('changed', (settings, key) => {
             if (key === 'refresh-interval') {
                 this._restartTimer();
-            } else if (key === 'widget-x' || key === 'widget-y') {
-                if (this._container) {
-                    this._container.set_position(
-                        this._settings.get_int('widget-x'),
-                        this._settings.get_int('widget-y')
-                    );
-                }
-            } else if (key === 'widget-width' || key === 'widget-max-width' || key === 'widget-max-height' || key === 'widget-orientation') {
+            } else if (key === 'widget-x' || key === 'widget-y' || key === 'widget-monitor') {
+                this._updatePosition();
+            } else if (key === 'widget-width' || key === 'widget-height' || key === 'widget-max-width' || key === 'widget-max-height' || key === 'widget-orientation') {
                 this._buildUi();
             }
             this._updateDisplay();
         });
+
+        // Listen for display/monitor topology changes
+        if (Main.layoutManager && typeof Main.layoutManager.connect === 'function') {
+            this._monitorsChangedId = Main.layoutManager.connect('monitors-changed', () => {
+                this._updatePosition();
+            });
+        }
 
         // Use a small timeout to ensure Shell is ready before final UI build
         this._initTimeoutId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 100, () => {
@@ -111,12 +113,18 @@ export default class CoreStatsExtension extends Extension {
             this._settings.disconnect(this._settingsId);
             this._settingsId = null;
         }
+        if (this._monitorsChangedId && Main.layoutManager) {
+            Main.layoutManager.disconnect(this._monitorsChangedId);
+            this._monitorsChangedId = null;
+        }
         if (this._container) {
             let parent = this._container.get_parent();
             if (parent) parent.remove_child(this._container);
             this._container.destroy();
             this._container = null;
         }
+        this._scrollView = null;
+        this._uiItems = [];
         this._settings = null;
         this._monitoredItems = [];
     }
@@ -211,6 +219,13 @@ export default class CoreStatsExtension extends Extension {
             
             let lines = contents.split('\n');
             let seenMounts = new Set();
+            let seenDevs = new Set();
+            const ignoredPrefixes = [
+                '/boot', '/etc', '/bin', '/sbin', '/usr', '/var',
+                '/dev', '/proc', '/sys', '/run/credentials',
+                '/run/systemd', '/run/user'
+            ];
+
             for (let line of lines) {
                 let parts = line.trim().split(/\s+/);
                 if (parts.length < 3) continue;
@@ -218,7 +233,7 @@ export default class CoreStatsExtension extends Extension {
                 let mountPoint = parts[1];
                 let fsType = parts[2];
 
-                if (dev.startsWith('/dev/') && !seenMounts.has(mountPoint)) {
+                if (dev.startsWith('/dev/')) {
                     if (fsType === 'tmpfs' || fsType === 'devtmpfs' || fsType === 'squashfs') continue;
                     
                     // Unescape octal sequences (like \040 for space)
@@ -226,7 +241,14 @@ export default class CoreStatsExtension extends Extension {
                         return String.fromCharCode(parseInt(octal, 8));
                     });
 
+                    if (seenMounts.has(mountPoint)) continue;
+                    if (ignoredPrefixes.some(p => mountPoint.startsWith(p))) continue;
+                    if (mountPoint.includes('/.')) continue;
+                    if (seenDevs.has(dev) && mountPoint !== '/' && mountPoint !== '/home') continue;
+
                     seenMounts.add(mountPoint);
+                    seenDevs.add(dev);
+
                     let label = mountPoint === '/' ? 'Root' : mountPoint.split('/').pop();
                     if (!label) label = mountPoint;
 
@@ -253,6 +275,15 @@ export default class CoreStatsExtension extends Extension {
             this._container = null;
         }
 
+        let orientation = this._settings.get_int('widget-orientation');
+        let isVertical = orientation === 0;
+        let width = this._settings.get_int('widget-width');
+        let height = this._settings.get_int('widget-height');
+
+        // Backward compatibility fallback
+        if (width <= 0) width = this._settings.get_int('widget-max-width');
+        if (height <= 0) height = this._settings.get_int('widget-max-height');
+
         this._container = new St.BoxLayout({
             vertical: true,
             style_class: 'core-stats-container',
@@ -263,52 +294,71 @@ export default class CoreStatsExtension extends Extension {
             y_expand: true
         });
 
-
-        let orientation = this._settings.get_int('widget-orientation');
-        let isVertical = orientation === 0;
-        let maxWidth = this._settings.get_int('widget-max-width');
-        let maxHeight = this._settings.get_int('widget-max-height');
-        
-        // Use widget-width as fallback if max-width is 0
-        if (maxWidth <= 0) maxWidth = this._settings.get_int('widget-width');
-        if (maxWidth <= 0) maxWidth = 280; // Absolute fallback
-
         let containerStyle = '';
 
-        if (maxWidth > 0) {
-            containerStyle += `width: ${maxWidth}px; `;
-            this._container.set_width(maxWidth);
+        if (isVertical) {
+            if (width <= 0) width = 280;
+            this._container.set_width(width);
+            containerStyle += `width: ${width}px; `;
+
+            if (height > 0) {
+                this._container.set_height(height);
+                containerStyle += `height: ${height}px; `;
+            } else {
+                this._container.set_height(-1);
+            }
         } else {
-            this._container.set_width(-1);
-        }
-        
-        if (maxHeight > 0) {
-            containerStyle += `height: ${maxHeight}px; `;
-            this._container.set_height(maxHeight);
-        } else {
-            this._container.set_height(-1);
+            // Horizontal orientation
+            if (width > 0) {
+                this._container.set_width(width);
+                containerStyle += `width: ${width}px; `;
+            } else {
+                this._container.set_width(-1);
+            }
+
+            if (height > 0) {
+                this._container.set_height(height);
+                containerStyle += `height: ${height}px; `;
+            } else {
+                this._container.set_height(-1);
+            }
         }
 
         if (containerStyle) this._container.style = containerStyle;
-        
-        let contentBox = new St.BoxLayout({
-            vertical: isVertical,
-            style_class: 'core-stats-content',
+
+        this._scrollView = new St.ScrollView({
+            style_class: 'core-stats-scrollview',
+            hscrollbar_policy: isVertical ? St.PolicyType.NEVER : (width > 0 ? St.PolicyType.AUTOMATIC : St.PolicyType.NEVER),
+            vscrollbar_policy: isVertical ? (height > 0 ? St.PolicyType.AUTOMATIC : St.PolicyType.NEVER) : St.PolicyType.NEVER,
+            enable_mouse_scrolling: true,
+            overlay_scrollbars: false,
             x_expand: true,
             y_expand: true,
             reactive: true
         });
-        this._container.add_child(contentBox);
+
+        let contentBox = new St.BoxLayout({
+            vertical: isVertical,
+            style_class: 'core-stats-content',
+            x_expand: true,
+            y_expand: true
+        });
+        this._scrollView.set_child(contentBox);
+        this._container.add_child(this._scrollView);
 
         this._uiItems = [];
 
         this._monitoredItems.forEach(item => {
             let row = new St.BoxLayout({ 
                 style_class: isVertical ? 'core-stats-row' : 'core-stats-row-horizontal', 
-                vertical: true 
+                vertical: true,
+                x_expand: true
             });
             
-            let infoBox = new St.BoxLayout({ style_class: 'core-stats-info' });
+            let infoBox = new St.BoxLayout({ 
+                style_class: 'core-stats-info',
+                x_expand: true 
+            });
             let icon;
             if (item.icon === 'cpu-chip-symbolic') {
                 let iconFile = this.dir.get_child('icons').get_child('cpu-chip-symbolic.svg');
@@ -328,13 +378,18 @@ export default class CoreStatsExtension extends Extension {
                 y_align: Clutter.ActorAlign.CENTER,
                 x_expand: true
             });
+            label.clutter_text.ellipsize = Pango.EllipsizeMode.END;
+            label.clutter_text.line_wrap = false;
 
             let valueLabel = new St.Label({ 
                 text: '--', 
                 style_class: 'core-stats-value',
                 x_align: Clutter.ActorAlign.END,
-                y_align: Clutter.ActorAlign.CENTER 
+                y_align: Clutter.ActorAlign.CENTER,
+                x_expand: false
             });
+            valueLabel.clutter_text.ellipsize = Pango.EllipsizeMode.END;
+            valueLabel.clutter_text.line_wrap = false;
 
             infoBox.add_child(icon);
             infoBox.add_child(label);
@@ -398,10 +453,43 @@ export default class CoreStatsExtension extends Extension {
             Main.uiGroup.add_child(this._container);
         }
 
-        // Position it from settings
+        // Position it from settings relative to chosen monitor
+        this._updatePosition();
+
+        this._updateDisplay();
+    }
+
+    _getTargetMonitor() {
+        let monitors = Main.layoutManager ? Main.layoutManager.monitors : null;
+        if (!monitors || monitors.length === 0) {
+            return (Main.layoutManager && Main.layoutManager.primaryMonitor) ? Main.layoutManager.primaryMonitor : null;
+        }
+
+        let monitorSetting = this._settings ? this._settings.get_int('widget-monitor') : 0;
+        // 0 = Primary Monitor
+        if (monitorSetting === 0) {
+            return Main.layoutManager.primaryMonitor || monitors[0];
+        }
+
+        // monitorSetting >= 1 corresponds to monitor index (monitorSetting - 1)
+        let targetIndex = monitorSetting - 1;
+        if (targetIndex >= 0 && targetIndex < monitors.length) {
+            return monitors[targetIndex];
+        }
+
+        return Main.layoutManager.primaryMonitor || monitors[0];
+    }
+
+    _updatePosition() {
+        if (!this._container || !this._settings) return;
+
+        let monitor = this._getTargetMonitor();
+        let monX = monitor ? monitor.x : 0;
+        let monY = monitor ? monitor.y : 0;
+
         this._container.set_position(
-            this._settings.get_int('widget-x'),
-            this._settings.get_int('widget-y')
+            monX + this._settings.get_int('widget-x'),
+            monY + this._settings.get_int('widget-y')
         );
     }
 
@@ -591,12 +679,17 @@ export default class CoreStatsExtension extends Extension {
             let parts = [];
             if (item.type === 'network') {
                 if (showUsage) {
-                    parts.push(`↓${item.speedDown.toFixed(1)} MB/s`);
-                    parts.push(`↑${item.speedUp.toFixed(1)} MB/s`);
+                    let downStr = item.speedDown >= 100 
+                        ? `${Math.round(item.speedDown)}` 
+                        : item.speedDown.toFixed(1);
+                    let upStr = item.speedUp >= 100 
+                        ? `${Math.round(item.speedUp)}` 
+                        : item.speedUp.toFixed(1);
+                    parts.push(`↓${downStr} ↑${upStr} MB/s`);
                 }
             } else if (item.type === 'drive') {
                 if (showUsage) {
-                    let text = `${item.usage}% full`;
+                    let text = `${item.usage}%`;
                     if (item.freeStr) text += ` (${item.freeStr} free)`;
                     parts.push(text);
                 }
@@ -622,15 +715,18 @@ export default class CoreStatsExtension extends Extension {
                 ui.valueLabel.remove_style_class_name('status-critical');
             }
 
-            let fullWidth = 100; // Lower default to avoid pushing container width
+            let isVertical = this._settings.get_int('widget-orientation') === 0;
             let barBg = ui.barFill.get_parent();
+            let availWidth = 100;
             if (barBg && barBg.width > 1) {
-                fullWidth = barBg.width;
-            } else if (this._container.width > 40) {
-                fullWidth = this._container.width - 40; // Fallback to container width minus padding
+                availWidth = barBg.width;
+            } else if (isVertical && this._container && this._container.width > 50) {
+                availWidth = this._container.width - 50;
+            } else if (!isVertical) {
+                availWidth = 220;
             }
             
-            let targetWidth = Math.max(0, (item.usage / 100) * fullWidth);
+            let targetWidth = Math.min(availWidth, Math.max(0, Math.round((item.usage / 100) * availWidth)));
             ui.barFill.width = targetWidth;
 
             ui.row.visible = (showTemp || showUsage);

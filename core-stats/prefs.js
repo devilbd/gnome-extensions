@@ -1,4 +1,5 @@
 import Adw from 'gi://Adw';
+import Gdk from 'gi://Gdk';
 import Gio from 'gi://Gio';
 import Gtk from 'gi://Gtk';
 import { ExtensionPreferences } from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
@@ -92,11 +93,69 @@ export default class CoreStatsPreferences extends ExtensionPreferences {
         critRow.add_suffix(critSpin);
         thresholdGroup.add(critRow);
 
-        // Position Group
-        const positionGroup = new Adw.PreferencesGroup({ title: 'Widget Position' });
+        // Position & Sizing Group
+        const positionGroup = new Adw.PreferencesGroup({ title: 'Widget Position & Sizing' });
         page.add(positionGroup);
 
-        const xRow = new Adw.ActionRow({ title: 'X Coordinate' });
+        // Display Monitor
+        const monitorStrings = ['Primary Monitor'];
+        try {
+            const display = Gdk.Display.get_default();
+            if (display) {
+                const monitors = display.get_monitors();
+                const count = monitors ? monitors.get_n_items() : 0;
+                for (let i = 0; i < count; i++) {
+                    const monitor = monitors.get_item(i);
+                    let desc = '';
+                    if (monitor) {
+                        if (typeof monitor.get_description === 'function') {
+                            desc = monitor.get_description() || '';
+                        }
+                        if (!desc && typeof monitor.get_model === 'function') {
+                            desc = monitor.get_model() || '';
+                        }
+                        let connector = '';
+                        if (typeof monitor.get_connector === 'function') {
+                            connector = monitor.get_connector() || '';
+                        }
+                        let label = `Monitor ${i + 1}`;
+                        let details = [connector, desc].filter(Boolean).join(' - ');
+                        if (details) {
+                            label += ` (${details})`;
+                        }
+                        monitorStrings.push(label);
+                    } else {
+                        monitorStrings.push(`Monitor ${i + 1}`);
+                    }
+                }
+            }
+        } catch (e) {
+            console.debug('CoreStats: Could not enumerate Gdk monitors:', e);
+        }
+
+        if (monitorStrings.length === 1) {
+            monitorStrings.push('Monitor 1', 'Monitor 2', 'Monitor 3');
+        }
+
+        const savedMonitor = settings.get_int('widget-monitor');
+        while (monitorStrings.length <= savedMonitor) {
+            monitorStrings.push(`Monitor ${monitorStrings.length}`);
+        }
+
+        const monitorRow = new Adw.ComboRow({
+            title: 'Display Monitor',
+            subtitle: 'Choose which monitor the HUD appears on',
+            model: new Gtk.StringList({
+                strings: monitorStrings
+            })
+        });
+        settings.bind('widget-monitor', monitorRow, 'selected', Gio.SettingsBindFlags.DEFAULT);
+        positionGroup.add(monitorRow);
+
+        const xRow = new Adw.ActionRow({
+            title: 'X Offset',
+            subtitle: 'Horizontal offset from monitor top-left (px)'
+        });
         const xSpin = new Gtk.SpinButton({
             adjustment: new Gtk.Adjustment({ lower: 0, upper: 5000, step_increment: 10 }),
             valign: Gtk.Align.CENTER
@@ -105,7 +164,10 @@ export default class CoreStatsPreferences extends ExtensionPreferences {
         xRow.add_suffix(xSpin);
         positionGroup.add(xRow);
 
-        const yRow = new Adw.ActionRow({ title: 'Y Coordinate' });
+        const yRow = new Adw.ActionRow({
+            title: 'Y Offset',
+            subtitle: 'Vertical offset from monitor top-left (px)'
+        });
         const ySpin = new Gtk.SpinButton({
             adjustment: new Gtk.Adjustment({ lower: 0, upper: 5000, step_increment: 10 }),
             valign: Gtk.Align.CENTER
@@ -113,7 +175,6 @@ export default class CoreStatsPreferences extends ExtensionPreferences {
         settings.bind('widget-y', ySpin, 'value', Gio.SettingsBindFlags.DEFAULT);
         yRow.add_suffix(ySpin);
         positionGroup.add(yRow);
-
 
         const orientationRow = new Adw.ComboRow({
             title: 'Widget Orientation',
@@ -124,23 +185,34 @@ export default class CoreStatsPreferences extends ExtensionPreferences {
         settings.bind('widget-orientation', orientationRow, 'selected', Gio.SettingsBindFlags.DEFAULT);
         positionGroup.add(orientationRow);
 
-        const maxWidthRow = new Adw.ActionRow({ title: 'Widget Size X (0 for automatic)' });
-        const maxWidthSpin = new Gtk.SpinButton({
-            adjustment: new Gtk.Adjustment({ lower: 0, upper: 2000, step_increment: 10 }),
-            valign: Gtk.Align.CENTER
-        });
-        settings.bind('widget-max-width', maxWidthSpin, 'value', Gio.SettingsBindFlags.DEFAULT);
-        maxWidthRow.add_suffix(maxWidthSpin);
-        positionGroup.add(maxWidthRow);
+        // Migrate legacy max-height/max-width settings if needed
+        if (settings.get_int('widget-height') === 0 && settings.get_int('widget-max-height') > 0) {
+            settings.set_int('widget-height', settings.get_int('widget-max-height'));
+        }
 
-        const maxHeightRow = new Adw.ActionRow({ title: 'Widget Size Y (0 for automatic)' });
-        const maxHeightSpin = new Gtk.SpinButton({
-            adjustment: new Gtk.Adjustment({ lower: 0, upper: 2000, step_increment: 10 }),
+        const widthRow = new Adw.ActionRow({
+            title: 'Width (px)',
+            subtitle: 'Widget width in pixels (0 for auto-fit)'
+        });
+        const widthSpin = new Gtk.SpinButton({
+            adjustment: new Gtk.Adjustment({ lower: 0, upper: 5000, step_increment: 20 }),
             valign: Gtk.Align.CENTER
         });
-        settings.bind('widget-max-height', maxHeightSpin, 'value', Gio.SettingsBindFlags.DEFAULT);
-        maxHeightRow.add_suffix(maxHeightSpin);
-        positionGroup.add(maxHeightRow);
+        settings.bind('widget-width', widthSpin, 'value', Gio.SettingsBindFlags.DEFAULT);
+        widthRow.add_suffix(widthSpin);
+        positionGroup.add(widthRow);
+
+        const heightRow = new Adw.ActionRow({
+            title: 'Height (px)',
+            subtitle: 'Widget height in pixels (0 for auto-fit)'
+        });
+        const heightSpin = new Gtk.SpinButton({
+            adjustment: new Gtk.Adjustment({ lower: 0, upper: 3000, step_increment: 20 }),
+            valign: Gtk.Align.CENTER
+        });
+        settings.bind('widget-height', heightSpin, 'value', Gio.SettingsBindFlags.DEFAULT);
+        heightRow.add_suffix(heightSpin);
+        positionGroup.add(heightRow);
         
 
         window.add(page);
