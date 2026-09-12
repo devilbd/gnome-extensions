@@ -71,6 +71,62 @@ export default class CoreStatsPreferences extends ExtensionPreferences {
         settings.bind('show-drive-usage', driveUsageRow, 'active', Gio.SettingsBindFlags.DEFAULT);
         visibilityGroup.add(driveUsageRow);
 
+        // Motherboard Values Group
+        const mbGroup = new Adw.PreferencesGroup({ 
+            title: 'Motherboard Values',
+            description: 'Monitors motherboard ambient, chipset, VRM, socket, and probe sensors. Requires corresponding kernel modules (e.g. nct6775, asus_ec_sensors, intel_pch_thermal, it87).'
+        });
+        page.add(mbGroup);
+
+        const mbSectionRow = new Adw.SwitchRow({ 
+            title: 'Show Motherboard Values Section',
+            subtitle: 'Display as a separate card beneath core stats'
+        });
+        settings.bind('show-motherboard-section', mbSectionRow, 'active', Gio.SettingsBindFlags.DEFAULT);
+        mbGroup.add(mbSectionRow);
+
+        const mbTempRow = new Adw.SwitchRow({ 
+            title: 'Show Motherboard Temperature',
+            subtitle: 'Ambient internal board / case temperature'
+        });
+        settings.bind('show-motherboard-temp', mbTempRow, 'active', Gio.SettingsBindFlags.DEFAULT);
+        mbGroup.add(mbTempRow);
+
+        const chipsetTempRow = new Adw.SwitchRow({ 
+            title: 'Show Chipset (PCH) Temperature',
+            subtitle: 'Platform Controller Hub / Chipset thermal load'
+        });
+        settings.bind('show-chipset-temp', chipsetTempRow, 'active', Gio.SettingsBindFlags.DEFAULT);
+        mbGroup.add(chipsetTempRow);
+
+        const vrmTempRow = new Adw.SwitchRow({ 
+            title: 'Show VRM Temperature',
+            subtitle: 'Power delivery MOSFET / stage thermal load'
+        });
+        settings.bind('show-vrm-temp', vrmTempRow, 'active', Gio.SettingsBindFlags.DEFAULT);
+        mbGroup.add(vrmTempRow);
+
+        const cpuSocketRow = new Adw.SwitchRow({ 
+            title: 'Show CPU Socket Temperature',
+            subtitle: 'Area beneath CPU socket on motherboard'
+        });
+        settings.bind('show-cpu-socket-temp', cpuSocketRow, 'active', Gio.SettingsBindFlags.DEFAULT);
+        mbGroup.add(cpuSocketRow);
+
+        const tsensorRow = new Adw.SwitchRow({ 
+            title: 'Show T-Sensor / Probe Temperature',
+            subtitle: 'External 2-pin thermistor probe or water loop headers'
+        });
+        settings.bind('show-tsensor-temp', tsensorRow, 'active', Gio.SettingsBindFlags.DEFAULT);
+        mbGroup.add(tsensorRow);
+
+        const vrmPowerRow = new Adw.SwitchRow({ 
+            title: 'Show VRM Power Telemetry',
+            subtitle: 'Display digital wattage alongside VRM temperature'
+        });
+        settings.bind('show-vrm-power', vrmPowerRow, 'active', Gio.SettingsBindFlags.DEFAULT);
+        mbGroup.add(vrmPowerRow);
+
         // Thresholds Group
         const thresholdGroup = new Adw.PreferencesGroup({ title: 'Thresholds' });
         page.add(thresholdGroup);

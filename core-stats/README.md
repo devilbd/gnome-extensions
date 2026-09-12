@@ -97,6 +97,7 @@ gnome-extensions prefs core-stats@devilbd.com
 | `show-ram-temp` / `show-ram-usage` | Boolean | `true` | Display RAM temperature and memory usage |
 | `show-network-usage` | Boolean | `true` | Display network download and upload speeds |
 | `show-drive-usage` | Boolean | `true` | Display filesystem storage usage and free space |
+| `show-motherboard-section` | Boolean | `true` | Display Motherboard, VRM, and Chipset telemetry |
 | `warning-threshold` | Integer | `80` | Warning temperature in °C |
 | `critical-threshold` | Integer | `95` | Critical temperature in °C |
 | `widget-monitor` | Integer | `0` | Monitor selection (`0`: Primary, `1`: Monitor 1, `2`: Monitor 2, ...) |
@@ -104,6 +105,26 @@ gnome-extensions prefs core-stats@devilbd.com
 | `widget-orientation` | Integer | `0` | Orientation (`0`: Vertical, `1`: Horizontal) |
 | `widget-width` | Integer | `280` | Widget width in pixels (`0` for auto/fit) |
 | `widget-height` | Integer | `0` | Widget height in pixels (`0` for auto/fit) |
+
+---
+
+## Motherboard Sensors Setup (Nuvoton / ASUS Super I/O)
+
+Motherboard ambient, VRM, CPU socket, and chassis fan sensors are provided by onboard Super I/O chips (such as Nuvoton NCT6796D / NCT6799D found on ASUS AM5 B650/B850, PRIME, TUF, and ROG motherboards).
+
+On many Linux distributions, the Super I/O driver (`nct6775`) is not loaded by default. To activate motherboard sensors:
+
+1. **Test loading the module immediately:**
+   ```bash
+   sudo modprobe nct6775
+   ```
+
+2. **Enable automatic loading at boot:**
+   ```bash
+   echo "nct6775" | sudo tee /etc/modules-load.d/nct6775.conf
+   ```
+
+Once loaded, `/sys/class/hwmon` registers the device (e.g. `nct6799`), and CORE STATS will automatically detect and display Motherboard Ambient (`SYSTIN`), VRM (`AUXTIN0`), and CPU Socket (`CPUTIN`) telemetry in the HUD.
 
 ---
 

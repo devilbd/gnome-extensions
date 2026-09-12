@@ -53,6 +53,34 @@
       <default>false</default>
       <summary>Show drive temperature (placeholder)</summary>
     </key>
+    <key name="show-motherboard-section" type="b">
+      <default>true</default>
+      <summary>Show Motherboard values section</summary>
+    </key>
+    <key name="show-motherboard-temp" type="b">
+      <default>true</default>
+      <summary>Show Motherboard ambient temperature</summary>
+    </key>
+    <key name="show-chipset-temp" type="b">
+      <default>true</default>
+      <summary>Show Chipset / PCH temperature</summary>
+    </key>
+    <key name="show-vrm-temp" type="b">
+      <default>true</default>
+      <summary>Show VRM temperature</summary>
+    </key>
+    <key name="show-cpu-socket-temp" type="b">
+      <default>false</default>
+      <summary>Show CPU Socket temperature</summary>
+    </key>
+    <key name="show-tsensor-temp" type="b">
+      <default>true</default>
+      <summary>Show T-Sensor / external probe temperature</summary>
+    </key>
+    <key name="show-vrm-power" type="b">
+      <default>true</default>
+      <summary>Show VRM power delivery telemetry</summary>
+    </key>
     <key name="temp-unit" type="s">
       <default>'celsius'</default>
       <summary>Temperature unit (celsius or fahrenheit)</summary>

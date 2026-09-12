@@ -1,4 +1,5 @@
-.core-stats-container {
+.core-stats-container,
+.core-stats-card {
     background-color: rgba(15, 15, 15, 0.4);
     border: 1px solid rgba(255, 255, 255, 0.12);
     border-top: 1px solid rgba(255, 255, 255, 0.25);
@@ -10,6 +11,32 @@
     overflow: hidden;
     min-width: 200px;
     min-height: 50px;
+}
+
+.core-stats-wrapper {
+    spacing: 12px;
+}
+
+.core-stats-mb-card {
+    margin-top: 4px;
+}
+
+.core-stats-section-header {
+    padding: 16px 20px 0px 20px;
+    spacing: 8px;
+}
+
+.core-stats-section-title {
+    font-size: 0.82em;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.65);
+}
+
+.core-stats-section-icon {
+    icon-size: 16px;
+    color: rgba(255, 255, 255, 0.65);
 }
 
 
@@ -151,6 +178,42 @@
     background-gradient-start: #ff9a9e;
     background-gradient-end: #fecfef;
     box-shadow: 0 0 15px rgba(254, 207, 239, 0.5);
+}
+
+.core-stats-bar-motherboard {
+    background-gradient-start: #00b09b;
+    background-gradient-end: #96c93d;
+    box-shadow: 0 0 15px rgba(0, 176, 155, 0.5);
+}
+
+.core-stats-bar-chipset {
+    background-gradient-start: #f7971e;
+    background-gradient-end: #ffd200;
+    box-shadow: 0 0 15px rgba(247, 151, 30, 0.5);
+}
+
+.core-stats-bar-vrm {
+    background-gradient-start: #ff416c;
+    background-gradient-end: #ff4b2b;
+    box-shadow: 0 0 15px rgba(255, 65, 108, 0.5);
+}
+
+.core-stats-bar-cpu-socket {
+    background-gradient-start: #2193b0;
+    background-gradient-end: #6dd5ed;
+    box-shadow: 0 0 15px rgba(33, 147, 176, 0.5);
+}
+
+.core-stats-bar-tsensor {
+    background-gradient-start: #8e2de2;
+    background-gradient-end: #4a00e0;
+    box-shadow: 0 0 15px rgba(142, 45, 226, 0.5);
+}
+
+.core-stats-bar-motherboard-m2 {
+    background-gradient-start: #ee0979;
+    background-gradient-end: #ff6a00;
+    box-shadow: 0 0 15px rgba(238, 9, 121, 0.5);
 }
 
 .core-stats-icon {

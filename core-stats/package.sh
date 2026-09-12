@@ -12,6 +12,6 @@ echo "Packaging extension $UUID..."
 glib-compile-schemas schemas/
 
 # Pack the extension
-gnome-extensions pack --force --out-dir="$OUTPUT_DIR"
+gnome-extensions pack --force --extra-source=icons --out-dir="$OUTPUT_DIR"
 
 echo "Extension packaged successfully: $OUTPUT_DIR/$UUID.shell-extension.zip"
