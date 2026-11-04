@@ -141,14 +141,20 @@ export default class CoreStatsExtension extends Extension {
             Main.layoutManager.disconnect(this._monitorsChangedId);
             this._monitorsChangedId = null;
         }
+        if (this._coreWidget) {
+            this._coreWidget.destroy();
+            this._coreWidget = null;
+        }
+        if (this._mbWidget) {
+            this._mbWidget.destroy();
+            this._mbWidget = null;
+        }
         if (this._container) {
             let parent = this._container.get_parent();
             if (parent) parent.remove_child(this._container);
             this._container.destroy();
             this._container = null;
         }
-        this._coreWidget = null;
-        this._mbWidget = null;
         this._uiItems = [];
         this._settings = null;
         this._monitoredItems = [];
@@ -448,6 +454,14 @@ export default class CoreStatsExtension extends Extension {
     }
 
     _buildUi() {
+        if (this._coreWidget) {
+            this._coreWidget.destroy();
+            this._coreWidget = null;
+        }
+        if (this._mbWidget) {
+            this._mbWidget.destroy();
+            this._mbWidget = null;
+        }
         if (this._container) {
             let parent = this._container.get_parent();
             if (parent) parent.remove_child(this._container);
