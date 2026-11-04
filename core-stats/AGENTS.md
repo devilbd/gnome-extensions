@@ -7,7 +7,7 @@ This document defines the operational rules, constraints, and architecture guide
 ## 1. Project Invariants
 
 - **Project Type:** GNOME Shell Desktop Extension (ESM).
-- **Target Versions:** GNOME Shell 45 through 50.
+- **Target Versions:** GNOME Shell 45 through 51.
 - **UUID:** `core-stats@devilbd.com`
 - **Language / Runtime:** JavaScript running on GJS (SpiderMonkey ESM).
 - **Primary Subsystems:**
@@ -61,7 +61,7 @@ When modifying or adding settings:
 core-stats/
 ├── extension.js          # Core extension logic, sensor polling, and Clutter/St UI
 ├── prefs.js              # Preferences window code (Adw.PreferencesPage)
-├── metadata.json         # Extension metadata, UUID, supported shell versions (45-50)
+├── metadata.json         # Extension metadata, UUID, supported shell versions (45-51)
 ├── stylesheet.css        # Extension CSS (HUD theme, bar styling, alert glows)
 ├── package.sh            # Packaging automation script
 ├── install.sh            # Local installation script

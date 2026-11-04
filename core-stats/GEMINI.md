@@ -2,7 +2,7 @@
 
 > **Extension UUID:** `core-stats@devilbd.com`  
 > **Repository:** [devilbd/gnome-extensions](https://github.com/devilbd/gnome-extensions/tree/main/core-stats)  
-> **Supported GNOME Versions:** 45, 46, 47, 48, 49, 50  
+> **Supported GNOME Versions:** 45, 46, 47, 48, 49, 50, 51  
 
 This repository contains the **CORE STATS** GNOME Shell desktop extension. It provides a real-time, glassmorphic desktop hardware HUD that displays temperatures and utilization percentages for CPU, GPU, NVMe, RAM, network bandwidth, and mounted storage drives directly on the GNOME Shell background layer.
 
@@ -10,7 +10,7 @@ This repository contains the **CORE STATS** GNOME Shell desktop extension. It pr
 
 ## 1. Technology Stack & Runtime
 
-- **Runtime:** GNOME Shell (45 through 50) via [GJS (GNOME JavaScript / SpiderMonkey)](https://gjs.guide/).
+- **Runtime:** GNOME Shell (45 through 51) via [GJS (GNOME JavaScript / SpiderMonkey)](https://gjs.guide/).
 - **Module System:** Strict ECMAScript Modules (ESM). Node.js APIs (`require`, `npm`, `process`) are **not** available.
 - **Introspection Libraries:**
   - `gi://St` – Shell Toolkit UI actors (`St.BoxLayout`, `St.Bin`, `St.Label`, `St.Icon`).
@@ -32,7 +32,7 @@ This repository contains the **CORE STATS** GNOME Shell desktop extension. It pr
 core-stats/
 ├── extension.js          # Core extension lifecycle, sensor polling, async I/O, UI construction
 ├── prefs.js              # Preferences window controller (ExtensionPreferences, Libadwaita rows)
-├── metadata.json         # Extension manifest (UUID, version, shell-version compatibility: 45-50)
+├── metadata.json         # Extension manifest (UUID, version, shell-version compatibility: 45-51)
 ├── stylesheet.css        # Glassmorphic HUD styles, progress bar styling, thermal status alerts
 ├── package.sh            # Script to compile schemas and produce distribution zip
 ├── install.sh            # Script to install locally into ~/.local/share/gnome-shell/extensions/

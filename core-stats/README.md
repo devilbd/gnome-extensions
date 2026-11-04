@@ -7,7 +7,7 @@ An elegant, real-time desktop hardware monitoring widget for GNOME Shell, built 
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/GNOME%20Shell-45%20|%2046%20|%2047%20|%2048%20|%2049%20|%2050-blue?logo=gnome" alt="GNOME Shell 45-50" />
+  <img src="https://img.shields.io/badge/GNOME%20Shell-45%20|%2046%20|%2047%20|%2048%20|%2049%20|%2050%20|%2051-blue?logo=gnome" alt="GNOME Shell 45-51" />
   <img src="https://img.shields.io/badge/Language-JavaScript%20(GJS)-yellow?logo=javascript" alt="JavaScript GJS" />
   <img src="https://img.shields.io/badge/UI-Libadwaita%20%2F%20GTK4-purple" alt="Libadwaita GTK4" />
   <img src="https://img.shields.io/badge/Scene%20Graph-Clutter%20%2F%20St-teal" alt="Clutter St" />
@@ -36,7 +36,7 @@ An elegant, real-time desktop hardware monitoring widget for GNOME Shell, built 
 
 | Component | Requirement |
 | :--- | :--- |
-| **Desktop Environment** | GNOME Shell 45, 46, 47, 48, 49, 50 |
+| **Desktop Environment** | GNOME Shell 45, 46, 47, 48, 49, 50, 51 |
 | **Display Server** | Wayland and X11 |
 | **OS / Kernel** | Linux with `hwmon` driver support (`/sys/class/hwmon`) |
 | **Tooling Dependencies** | `glib2` (`glib-compile-schemas`), `gnome-extensions-tool` |

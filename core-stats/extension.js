@@ -481,7 +481,7 @@ export default class CoreStatsExtension extends Extension {
         if (isVertical && width <= 0) width = 280;
 
         this._container = new St.BoxLayout({
-            vertical: true,
+            orientation: Clutter.Orientation.VERTICAL,
             style_class: 'core-stats-wrapper',
             reactive: true,
             can_focus: false,
@@ -492,7 +492,7 @@ export default class CoreStatsExtension extends Extension {
 
         // 1. Main Core Stats Card
         this._coreWidget = new St.BoxLayout({
-            vertical: true,
+            orientation: Clutter.Orientation.VERTICAL,
             style_class: 'core-stats-card',
             reactive: true,
             can_focus: false,
@@ -521,7 +521,7 @@ export default class CoreStatsExtension extends Extension {
         });
 
         let coreContentBox = new St.BoxLayout({
-            vertical: isVertical,
+            orientation: isVertical ? Clutter.Orientation.VERTICAL : Clutter.Orientation.HORIZONTAL,
             style_class: 'core-stats-content',
             x_expand: true,
             y_expand: true
@@ -549,7 +549,7 @@ export default class CoreStatsExtension extends Extension {
 
         // 2. Motherboard Values Card (Separate widget look)
         this._mbWidget = new St.BoxLayout({
-            vertical: true,
+            orientation: Clutter.Orientation.VERTICAL,
             style_class: 'core-stats-card core-stats-mb-card',
             reactive: true,
             can_focus: false,
@@ -583,7 +583,7 @@ export default class CoreStatsExtension extends Extension {
         this._mbWidget.add_child(mbHeader);
 
         let mbContentBox = new St.BoxLayout({
-            vertical: isVertical,
+            orientation: isVertical ? Clutter.Orientation.VERTICAL : Clutter.Orientation.HORIZONTAL,
             style_class: 'core-stats-content',
             x_expand: true,
             y_expand: true
@@ -597,7 +597,7 @@ export default class CoreStatsExtension extends Extension {
         this._monitoredItems.forEach(item => {
             let row = new St.BoxLayout({ 
                 style_class: isVertical ? 'core-stats-row' : 'core-stats-row-horizontal', 
-                vertical: true,
+                orientation: Clutter.Orientation.VERTICAL,
                 x_expand: true
             });
             
@@ -671,7 +671,7 @@ export default class CoreStatsExtension extends Extension {
         if (!hasMbSensors) {
             let placeholderBox = new St.BoxLayout({
                 style_class: 'core-stats-row',
-                vertical: false,
+                orientation: Clutter.Orientation.HORIZONTAL,
                 x_expand: true
             });
             let placeholderLabel = new St.Label({
